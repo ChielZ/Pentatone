@@ -147,7 +147,7 @@ private struct NavigationStrip: View {
                     .fill(Color("HighlightColour"))
                 
                 Text("Pentatone")
-                    .font(.custom("SignPainter", size: 35))
+                    .font(.custom("SignPainter", size: 42))
                     .foregroundColor(Color("BackgroundColour"))
                     .minimumScaleFactor(0.3)
                     .lineLimit(1)
@@ -158,7 +158,7 @@ private struct NavigationStrip: View {
                 
                 VStack {
                     Text("•UNFOLD•")
-                        .font(.custom("Futura Medium", size: 17))
+                        .font(.custom("Futura Medium", size: 18))
                         .foregroundColor(Color("BackgroundColour"))
                         .minimumScaleFactor(0.3)
                         .lineLimit(1)
