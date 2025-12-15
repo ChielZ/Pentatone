@@ -55,22 +55,22 @@ enum AudioSessionManager {
 
 
 // Shared wavetable - created once and reused by all oscillators
-private let sharedSineTable = Table(.sine)
+//private let sharedSineTable = Table(.sine)
 
 // A single voice: oscillator -> amplitude envelope -> shared mixer
 final class OscVoice {
-    let osc: Oscillator
+    let osc: FMOscillator
     let env: AmplitudeEnvelope
 
     private var frequency: AUValue = 200.0
     private var initialised = false
 
     init() {
-        self.osc = Oscillator(waveform: Table(.sine))
+        self.osc = FMOscillator(waveform: Table(.triangle))
         self.env = AmplitudeEnvelope(osc,
-                                     attackDuration: 0.002,
-                                     decayDuration: 0.12,
-                                     sustainLevel: 0.0,
+                                     attackDuration: 0.5,
+                                     decayDuration: 0.5,
+                                     sustainLevel: 0.2,
                                      releaseDuration: 0.10)
         sharedMixer.addInput(env)
     }
@@ -78,7 +78,7 @@ final class OscVoice {
     func initialise() {
         if !initialised {
             initialised = true
-            osc.frequency = frequency
+            osc.baseFrequency = frequency
             osc.amplitude = 0.15
             osc.start()
         }
@@ -87,7 +87,7 @@ final class OscVoice {
     func setFrequency(_ freq: Double) {
         frequency = AUValue(freq)
         if initialised {
-            osc.frequency = frequency
+            osc.baseFrequency = frequency
         }
     }
 
@@ -97,6 +97,12 @@ final class OscVoice {
         }
         env.reset()
         env.openGate()
+        //print("trigger invoked- frequency: \(frequency)")
+    }
+    
+    func release() {
+        env.closeGate()
+        //print("release invoked- frequency: \(frequency)")
     }
 }
 

@@ -81,15 +81,15 @@ struct MainKeyboardView: View {
                 HStack(spacing: 0) {
                     // Left column - Keys
                     VStack {
-                        KeyButton(colorName: keyColor(for: 16)) { oscillator17.trigger() }
-                        KeyButton(colorName: keyColor(for: 14)) { oscillator15.trigger() }
-                        KeyButton(colorName: keyColor(for: 12)) { oscillator13.trigger() }
-                        KeyButton(colorName: keyColor(for: 10)) { oscillator11.trigger() }
-                        KeyButton(colorName: keyColor(for: 8)) { oscillator09.trigger() }
-                        KeyButton(colorName: keyColor(for: 6)) { oscillator07.trigger() }
-                        KeyButton(colorName: keyColor(for: 4)) { oscillator05.trigger() }
-                        KeyButton(colorName: keyColor(for: 2)) { oscillator03.trigger() }
-                        KeyButton(colorName: keyColor(for: 0)) { oscillator01.trigger() }
+                        KeyButton(colorName: keyColor(for: 16), trigger: { oscillator17.trigger() }, release: { oscillator17.release() })
+                        KeyButton(colorName: keyColor(for: 14), trigger: { oscillator15.trigger() }, release: { oscillator15.release() })
+                        KeyButton(colorName: keyColor(for: 12), trigger: { oscillator13.trigger() }, release: { oscillator13.release() })
+                        KeyButton(colorName: keyColor(for: 10), trigger: { oscillator11.trigger() }, release: { oscillator11.release() })
+                        KeyButton(colorName: keyColor(for: 8), trigger: { oscillator09.trigger() }, release: { oscillator09.release() })
+                        KeyButton(colorName: keyColor(for: 6), trigger: { oscillator07.trigger() }, release: { oscillator07.release() })
+                        KeyButton(colorName: keyColor(for: 4), trigger: { oscillator05.trigger() }, release: { oscillator05.release() })
+                        KeyButton(colorName: keyColor(for: 2), trigger: { oscillator03.trigger() }, release: { oscillator03.release() })
+                        KeyButton(colorName: keyColor(for: 0), trigger: { oscillator01.trigger() }, release: { oscillator01.release() })
                     }
                     .padding(5)
                     
@@ -134,15 +134,15 @@ struct MainKeyboardView: View {
                     
                     // Right column - Keys
                     VStack {
-                        KeyButton(colorName: keyColor(for: 17)) { oscillator18.trigger() }
-                        KeyButton(colorName: keyColor(for: 15)) { oscillator16.trigger() }
-                        KeyButton(colorName: keyColor(for: 13)) { oscillator14.trigger() }
-                        KeyButton(colorName: keyColor(for: 11)) { oscillator12.trigger() }
-                        KeyButton(colorName: keyColor(for: 9)) { oscillator10.trigger() }
-                        KeyButton(colorName: keyColor(for: 7)) { oscillator08.trigger() }
-                        KeyButton(colorName: keyColor(for: 5)) { oscillator06.trigger() }
-                        KeyButton(colorName: keyColor(for: 3)) { oscillator04.trigger() }
-                        KeyButton(colorName: keyColor(for: 1)) { oscillator02.trigger() }
+                        KeyButton(colorName: keyColor(for: 17), trigger: { oscillator18.trigger() }, release: { oscillator18.release() })
+                        KeyButton(colorName: keyColor(for: 15), trigger: { oscillator16.trigger() }, release: { oscillator16.release() })
+                        KeyButton(colorName: keyColor(for: 13), trigger: { oscillator14.trigger() }, release: { oscillator14.release() })
+                        KeyButton(colorName: keyColor(for: 11), trigger: { oscillator12.trigger() }, release: { oscillator12.release() })
+                        KeyButton(colorName: keyColor(for: 9), trigger: { oscillator10.trigger() }, release: { oscillator10.release() })
+                        KeyButton(colorName: keyColor(for: 7), trigger: { oscillator08.trigger() }, release: { oscillator08.release() })
+                        KeyButton(colorName: keyColor(for: 5), trigger: { oscillator06.trigger() }, release: { oscillator06.release() })
+                        KeyButton(colorName: keyColor(for: 3), trigger: { oscillator04.trigger() }, release: { oscillator04.release() })
+                        KeyButton(colorName: keyColor(for: 1), trigger: { oscillator02.trigger() }, release: { oscillator02.release() })
                     }
                     .padding(5)
                 }
@@ -229,6 +229,7 @@ private struct NavigationStrip: View {
 private struct KeyButton: View {
     let colorName: String
     let trigger: () -> Void
+    let release: () -> Void
     
     @State private var isDimmed = false
     @State private var hasFiredCurrentTouch = false
@@ -243,16 +244,20 @@ private struct KeyButton: View {
                         if !hasFiredCurrentTouch {
                             hasFiredCurrentTouch = true
                             trigger()
+                            //print("onChanged")
                             isDimmed = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                                withAnimation(.easeOut(duration: 0.28)) {
-                                    isDimmed = false
-                                }
-                            }
+                            //DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                            //    withAnimation(.easeOut(duration: 0.28)) {
+                            //        isDimmed = false
+                            //    }
+                            //}
                         }
                     }
                     .onEnded { _ in
                         hasFiredCurrentTouch = false
+                        //print("onEnded")
+                        isDimmed = false
+                        release()
                     }
             )
     }
