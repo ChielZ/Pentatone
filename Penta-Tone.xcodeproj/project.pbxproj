@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		7F94C6D22EDE355800CEE22F /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7F94C6D12EDE355800CEE22F /* AudioKit */; };
 		7F94C6DB2EDE3A4D00CEE22F /* SoundpipeAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7F94C6DA2EDE3A4D00CEE22F /* SoundpipeAudioKit */; };
+		7FF3103B2EF0955D004F4A98 /* DunneAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7FF3103A2EF0955D004F4A98 /* DunneAudioKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			files = (
 				7F94C6DB2EDE3A4D00CEE22F /* SoundpipeAudioKit in Frameworks */,
 				7F94C6D22EDE355800CEE22F /* AudioKit in Frameworks */,
+				7FF3103B2EF0955D004F4A98 /* DunneAudioKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 			packageProductDependencies = (
 				7F94C6D12EDE355800CEE22F /* AudioKit */,
 				7F94C6DA2EDE3A4D00CEE22F /* SoundpipeAudioKit */,
+				7FF3103A2EF0955D004F4A98 /* DunneAudioKit */,
 			);
 			productName = "Penta-Tone";
 			productReference = 7F3D45E12EDCF9AC00538543 /* Penta-Tone.app */;
@@ -119,6 +122,7 @@
 			packageReferences = (
 				7F94C6D02EDE355800CEE22F /* XCRemoteSwiftPackageReference "AudioKit" */,
 				7F94C6D92EDE3A4D00CEE22F /* XCRemoteSwiftPackageReference "SoundpipeAudioKit" */,
+				7FF310392EF0955D004F4A98 /* XCRemoteSwiftPackageReference "DunneAudioKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F3D45E22EDCF9AC00538543 /* Products */;
@@ -378,6 +382,14 @@
 				minimumVersion = 5.7.3;
 			};
 		};
+		7FF310392EF0955D004F4A98 /* XCRemoteSwiftPackageReference "DunneAudioKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AudioKit/DunneAudioKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.6.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -390,6 +402,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7F94C6D92EDE3A4D00CEE22F /* XCRemoteSwiftPackageReference "SoundpipeAudioKit" */;
 			productName = SoundpipeAudioKit;
+		};
+		7FF3103A2EF0955D004F4A98 /* DunneAudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7FF310392EF0955D004F4A98 /* XCRemoteSwiftPackageReference "DunneAudioKit" */;
+			productName = DunneAudioKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
