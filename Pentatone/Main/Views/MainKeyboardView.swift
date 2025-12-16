@@ -235,7 +235,7 @@ private struct KeyButton: View {
     
     @State private var isDimmed = false
     @State private var hasFiredCurrentTouch = false
-    @State private var initialTouchX: CGFloat? = nil  // Track initial touch position for aftertouch
+    @State private var initialTouchX: CGFloat? = nil  // Track initial touch position for relative aftertouch
     @State private var lastAftertouchX: CGFloat? = nil  // Track last processed aftertouch position
     
     // Minimum movement threshold (in points) before aftertouch responds
@@ -263,29 +263,36 @@ private struct KeyButton: View {
                                 lastAftertouchX = touchX  // Initialize for threshold calculation
                                 
                                 // Map initial touch X position to amplitude
+                                /*
                                 AudioParameterManager.shared.mapTouchToAmplitude(
                                     voiceIndex: voiceIndex,
                                     touchX: touchX,
                                     viewWidth: geometry.size.width
                                 )
-                                
+                                */
                                 // Reset filter cutoff to template default
                                 // This ensures the note starts with the stored cutoff value
                                 AudioParameterManager.shared.resetVoiceFilterToTemplate(at: voiceIndex)
                                 
+                                // Clear the voice override so next touch uses template settings
+                                AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
+                                
                                 trigger()
                                 isDimmed = true
                             } else {
-                                // AFTERTOUCH - Update filter cutoff based on X movement
+                                // AFTERTOUCH - Update filter cutoff based on X movement from initial position
                                 // Only respond if movement exceeds threshold
-                                if let lastX = lastAftertouchX, abs(touchX - lastX) >= movementThreshold {
+                                if let lastX = lastAftertouchX, abs(touchX - lastX) >= movementThreshold,
+                                   let initialX = initialTouchX {
                                     lastAftertouchX = touchX
                                     
-                                    // Movement toward center (decreasing touchX) = brighter (higher cutoff)
-                                    // Movement toward edge (increasing touchX) = darker (lower cutoff)
+                                    // RELATIVE aftertouch: movement from initial position adjusts cutoff
+                                    // Movement toward center (increasing touchX) = brighter (higher cutoff)
+                                    // Movement toward edge (decreasing touchX) = darker (lower cutoff)
                                     AudioParameterManager.shared.mapAftertouchToFilterCutoffSmoothed(
                                         voiceIndex: voiceIndex,
-                                        touchX: touchX,
+                                        initialTouchX: initialX,
+                                        currentTouchX: touchX,
                                         viewWidth: geometry.size.width
                                     )
                                 }
@@ -298,7 +305,7 @@ private struct KeyButton: View {
                             release()
                             
                             // Clear the voice override so next touch uses template settings
-                            AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
+                            //AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                 withAnimation(.easeOut(duration: 0.28)) {

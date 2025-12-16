@@ -62,13 +62,13 @@ struct FilterParameters: Codable, Equatable {
     var resonance: Double
     
     static let `default` = FilterParameters(
-        cutoffFrequency: 8800,
-        resonance: 25.0
+        cutoffFrequency: 1200,
+        resonance: 20.0
     )
     
     /// Clamps cutoff to valid range (20 Hz - 20 kHz)
     var clampedCutoff: Double {
-        min(max(cutoffFrequency, 20), 20_000)
+        min(max(cutoffFrequency, 10), 20_000)
     }
 }
 
@@ -298,8 +298,8 @@ final class AudioParameterManager: ObservableObject {
         guard (0..<18).contains(voiceIndex) else { return }
         
         // Map 0-1 to reasonable filter range (200 Hz - 12 kHz)
-        let minFreq = 20.0
-        let maxFreq = 12000.0
+        let minFreq = 10.0
+        let maxFreq = 20000.0
         let cutoff = minFreq + (normalizedValue * (maxFreq - minFreq))
         
         var voiceParams = voiceOverrides[voiceIndex] ?? voiceTemplate
@@ -495,7 +495,7 @@ extension AudioParameterManager {
         voiceIndex: Int,
         touchX: CGFloat,
         viewWidth: CGFloat,
-        range: ClosedRange<Double> = 150...20_000
+        range: ClosedRange<Double> = 10...20_000
     ) {
         guard viewWidth > 0 else { return }
         
@@ -533,7 +533,7 @@ extension AudioParameterManager {
         voiceIndex: Int,
         touchX: CGFloat,
         viewWidth: CGFloat,
-        range: ClosedRange<Double> = 300...15_000
+        range: ClosedRange<Double> = 10...20_000
     ) {
         guard viewWidth > 0 else { return }
         
@@ -558,40 +558,52 @@ extension AudioParameterManager {
     }
     
     /// Maps aftertouch to filter cutoff with smoothing/interpolation for glitch-free parameter changes
-    /// Uses linear interpolation (lerp) between the current and target cutoff values
+    /// Uses RELATIVE movement: finger movement from initial position adjusts cutoff up/down from starting value
     /// - Parameters:
     ///   - voiceIndex: The voice to modify (0-17)
-    ///   - touchX: The current x position of the touch
+    ///   - initialTouchX: The X position where the finger first touched
+    ///   - currentTouchX: The current X position of the finger
     ///   - viewWidth: The total width of the touchable area
-    ///   - range: Optional custom frequency range (default: 300-15000 Hz)
+    ///   - sensitivity: How much cutoff changes per unit of movement (default: 30.0 Hz/point)
+    ///   - range: Optional cutoff clamp range (default: 300-15000 Hz)
     ///   - smoothingFactor: Amount of smoothing (0 = no smoothing, 1 = maximum smoothing). Default: 0.25
     func mapAftertouchToFilterCutoffSmoothed(
         voiceIndex: Int,
-        touchX: CGFloat,
+        initialTouchX: CGFloat,
+        currentTouchX: CGFloat,
         viewWidth: CGFloat,
-        range: ClosedRange<Double> = 300...15_000,
-        smoothingFactor: Double = 0.25
+        sensitivity: Double = 25.0,
+        range: ClosedRange<Double> = 100...20_000,
+        smoothingFactor: Double = 0.35
     ) {
         guard viewWidth > 0 else { return }
         guard (0..<18).contains(voiceIndex) else { return }
         
-        // Normalize touch position to 0...1
-        let normalized = max(0, min(1, touchX / viewWidth))
+        // Get the base cutoff frequency (what the note started with)
+        let baseCutoff = voiceTemplate.filter.cutoffFrequency
         
-        // Calculate target cutoff frequency using exponential mapping
-        let minFreq = range.lowerBound
-        let maxFreq = range.upperBound
-        let ratio = maxFreq / minFreq
-        let targetCutoff = minFreq * pow(ratio, normalized)
+        // Calculate the movement delta from initial touch position
+        // Positive delta = moved toward center = brighter (increase cutoff)
+        // Negative delta = moved toward edge = darker (decrease cutoff)
+        let movementDelta = currentTouchX - initialTouchX
         
-        // Get current cutoff (either from last smoothed value or current voice parameter)
+        // Convert movement to frequency change
+        // Multiply by sensitivity to control how responsive it is
+        let frequencyChange = Double(movementDelta) * sensitivity
+        
+        // Calculate target cutoff: base + change from movement
+        var targetCutoff = baseCutoff + frequencyChange
+        
+        // Clamp to valid range
+        targetCutoff = max(range.lowerBound, min(range.upperBound, targetCutoff))
+        
+        // Get current cutoff (either from last smoothed value or base cutoff)
         let currentCutoff: Double
         if let lastCutoff = lastFilterCutoffs[voiceIndex] {
             currentCutoff = lastCutoff
         } else {
-            // First time - use current voice parameter
-            let voiceParams = voiceOverrides[voiceIndex] ?? voiceTemplate
-            currentCutoff = voiceParams.filter.cutoffFrequency
+            // First time - start from base cutoff
+            currentCutoff = baseCutoff
         }
         
         // Apply linear interpolation (lerp) for smoothing
