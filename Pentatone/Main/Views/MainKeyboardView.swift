@@ -235,6 +235,7 @@ private struct KeyButton: View {
     
     @State private var isDimmed = false
     @State private var hasFiredCurrentTouch = false
+    @State private var initialTouchX: CGFloat? = nil  // Track initial touch position for aftertouch
     
     var body: some View {
         GeometryReader { geometry in
@@ -244,37 +245,49 @@ private struct KeyButton: View {
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
+                            // Calculate touch position, inverting for left side
+                            // Left side: outer edge = loud/bright, center edge = quiet/dark
+                            // Right side: center edge = quiet/dark, outer edge = loud/bright
+                            let touchX = isLeftSide 
+                                ? value.location.x
+                                : geometry.size.width - value.location.x
+                            
                             if !hasFiredCurrentTouch {
+                                // INITIAL TOUCH - Set amplitude and trigger note
                                 hasFiredCurrentTouch = true
+                                initialTouchX = touchX
                                 
-                                // Calculate touch position, inverting for left side
-                                // Left side: outer edge = high cutoff, center edge = low cutoff
-                                // Right side: center edge = low cutoff, outer edge = high cutoff
-                                let touchX = isLeftSide 
-                                    ? value.location.x  // Reverse for left side
-                                    : geometry.size.width - value.location.x
-                                
-                                // Clear the previous override so the voice returns to template settings (is this necessary? commented out for now)
-                                //AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
-                                
-                                
-                                // Map touch X position to filter cutoff
+                                // Map initial touch X position to amplitude
                                 AudioParameterManager.shared.mapTouchToAmplitude(
                                     voiceIndex: voiceIndex,
                                     touchX: touchX,
                                     viewWidth: geometry.size.width
                                 )
                                 
+                                // Reset filter cutoff to template default
+                                // This ensures the note starts with the stored cutoff value
+                                AudioParameterManager.shared.resetVoiceFilterToTemplate(at: voiceIndex)
+                                
                                 trigger()
                                 isDimmed = true
+                            } else {
+                                // AFTERTOUCH - Update filter cutoff based on X movement
+                                // Movement toward center (decreasing touchX) = brighter (higher cutoff)
+                                // Movement toward edge (increasing touchX) = darker (lower cutoff)
+                                AudioParameterManager.shared.mapAftertouchToFilterCutoff(
+                                    voiceIndex: voiceIndex,
+                                    touchX: touchX,
+                                    viewWidth: geometry.size.width
+                                )
                             }
                         }
                         .onEnded { _ in
                             hasFiredCurrentTouch = false
+                            initialTouchX = nil
                             release()
                             
-                            
-                            
+                            // Clear the voice override so next touch uses template settings
+                            AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                 withAnimation(.easeOut(duration: 0.28)) {

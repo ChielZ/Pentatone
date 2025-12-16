@@ -63,7 +63,7 @@ struct FilterParameters: Codable, Equatable {
     
     static let `default` = FilterParameters(
         cutoffFrequency: 8800,
-        resonance: 0.0
+        resonance: 25.0
     )
     
     /// Clamps cutoff to valid range (20 Hz - 20 kHz)
@@ -81,8 +81,8 @@ struct EnvelopeParameters: Codable, Equatable {
     
     static let `default` = EnvelopeParameters(
         attackDuration: 0.2,
-        decayDuration: 0.6,
-        sustainLevel: 0.0,
+        decayDuration: 0.2,
+        sustainLevel: 0.7,
         releaseDuration: 0.2
     )
 }
@@ -511,6 +511,63 @@ extension AudioParameterManager {
         
         if let voice = getVoice(at: voiceIndex) {
             voice.filter.cutoffFrequency = AUValue(cutoff)
+        }
+    }
+    
+    /// Maps aftertouch (finger movement) to filter cutoff frequency for a voice
+    /// Designed for continuous control during note sustain
+    /// Movement toward center (lower touchX) = brighter sound (higher cutoff)
+    /// Movement toward edge (higher touchX) = darker sound (lower cutoff)
+    /// - Parameters:
+    ///   - voiceIndex: The voice to modify (0-17)
+    ///   - touchX: The current x position of the touch
+    ///   - viewWidth: The total width of the touchable area
+    ///   - range: Optional custom frequency range (default: 300-15000 Hz for musical expressiveness)
+    func mapAftertouchToFilterCutoff(
+        voiceIndex: Int,
+        touchX: CGFloat,
+        viewWidth: CGFloat,
+        range: ClosedRange<Double> = 300...15_000
+    ) {
+        guard viewWidth > 0 else { return }
+        
+        // Normalize touch position to 0...1
+        // 0 = edge of screen (darker), 1 = center of screen (brighter)
+        let normalized = max(0, min(1, touchX / viewWidth))
+        
+        // Apply exponential mapping for musical response
+        let minFreq = range.lowerBound
+        let maxFreq = range.upperBound
+        let ratio = maxFreq / minFreq
+        let cutoff = minFreq * pow(ratio, normalized)
+        
+        // Apply to voice (update override)
+        var voiceParams = voiceOverrides[voiceIndex] ?? voiceTemplate
+        voiceParams.filter.cutoffFrequency = cutoff
+        voiceOverrides[voiceIndex] = voiceParams
+        
+        if let voice = getVoice(at: voiceIndex) {
+            voice.filter.cutoffFrequency = AUValue(cutoff)
+        }
+    }
+    
+    /// Resets a voice's filter cutoff to the template default
+    /// Used to ensure notes start with the stored/default cutoff value before aftertouch is applied
+    /// - Parameter voiceIndex: The voice to reset (0-17)
+    func resetVoiceFilterToTemplate(at voiceIndex: Int) {
+        guard (0..<18).contains(voiceIndex) else { return }
+        
+        // Get template cutoff
+        let templateCutoff = voiceTemplate.filter.cutoffFrequency
+        
+        // Update the override (if it exists) or create one
+        var voiceParams = voiceOverrides[voiceIndex] ?? voiceTemplate
+        voiceParams.filter.cutoffFrequency = templateCutoff
+        voiceOverrides[voiceIndex] = voiceParams
+        
+        // Apply to AudioKit voice
+        if let voice = getVoice(at: voiceIndex) {
+            voice.filter.cutoffFrequency = AUValue(voiceParams.filter.clampedCutoff)
         }
     }
     
