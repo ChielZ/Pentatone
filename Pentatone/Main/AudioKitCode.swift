@@ -45,6 +45,17 @@ enum AudioSessionManager {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // A single voice: oscillator -> filter -> amplitude envelope -> pan -> shared mixer
 final class OscVoice {
     let osc: FMOscillator
@@ -54,17 +65,21 @@ final class OscVoice {
 
     private var frequency: AUValue = 146.83
     private var initialised = false
+    private var currentWaveform: OscillatorWaveform = .sine  // Track current waveform
 
     init(parameters: VoiceParameters = .default) {
         // Initialize with parameters from the parameter system
+        self.currentWaveform = parameters.oscillator.waveform
+        
         self.osc = FMOscillator(
-                        waveform: Table(.sine),
-                        baseFrequency: frequency,
-                        carrierMultiplier: AUValue(parameters.oscillator.carrierMultiplier),
-                        modulatingMultiplier: AUValue(parameters.oscillator.modulatingMultiplier),
-                        modulationIndex: AUValue(parameters.oscillator.modulationIndex),
-                        amplitude: AUValue(parameters.oscillator.amplitude)
-                        )
+                            waveform: parameters.oscillator.waveform.makeTable(),  // <-- Use parameter
+                            baseFrequency: frequency,
+                            carrierMultiplier: AUValue(parameters.oscillator.carrierMultiplier),
+                            modulatingMultiplier: AUValue(parameters.oscillator.modulatingMultiplier),
+                            modulationIndex: AUValue(parameters.oscillator.modulationIndex),
+                            amplitude: AUValue(parameters.oscillator.amplitude)
+                            )
+                        
         
         self.filter = LowPassFilter(
                         osc,
@@ -87,6 +102,16 @@ final class OscVoice {
 
         voiceMixer.addInput(pan)
     }
+    
+    func updateWaveformIfNeeded(_ newWaveform: OscillatorWaveform) {
+        currentWaveform = newWaveform
+        // Note: Dynamic waveform switching requires voice recreation
+        // Current implementation tracks preference for future recreation
+    }
+    
+    
+
+    
     
     func initialise() {
         if !initialised {

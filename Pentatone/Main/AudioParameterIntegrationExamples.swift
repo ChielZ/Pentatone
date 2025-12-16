@@ -181,6 +181,25 @@ struct ParameterControlPanel_Example: View {
                             .foregroundColor(.white)
                             .frame(width: 50)
                     }
+                    
+                    // Waveform Selection
+                    HStack {
+                        Text("Waveform:")
+                            .foregroundColor(.white)
+                        Picker("Waveform", selection: Binding(
+                            get: { paramManager.voiceTemplate.oscillator.waveform },
+                            set: { newValue in
+                                var params = paramManager.voiceTemplate.oscillator
+                                params.waveform = newValue
+                                paramManager.updateTemplateOscillator(params)
+                            }
+                        )) {
+                            ForEach(OscillatorWaveform.allCases, id: \.self) { waveform in
+                                Text(waveform.displayName).tag(waveform)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
                 }
             } label: {
                 Text("Voice Timbre")
@@ -258,13 +277,14 @@ struct PresetManagerExample {
     func createFactoryPresets() -> [AudioParameterSet] {
         var presets: [AudioParameterSet] = []
         
-        // Bright preset - high filter, short release
+        // Bright preset - high filter, short release, triangle wave
         let brightVoice = VoiceParameters(
             oscillator: OscillatorParameters(
                 carrierMultiplier: 1.0,
                 modulatingMultiplier: 2.0,
                 modulationIndex: 1.2,
-                amplitude: 0.15
+                amplitude: 0.15,
+                waveform: .triangle  // Triangle for bright, edgy sound
             ),
             filter: FilterParameters(cutoffFrequency: 10_000, resonance: 0.2),
             envelope: EnvelopeParameters(
@@ -285,13 +305,14 @@ struct PresetManagerExample {
         )
         presets.append(brightPreset)
         
-        // Deep Bass preset - low filter, long release
+        // Deep Bass preset - low filter, long release, square wave
         let deepVoice = VoiceParameters(
             oscillator: OscillatorParameters(
                 carrierMultiplier: 1.0,
                 modulatingMultiplier: 1.5,
                 modulationIndex: 0.5,
-                amplitude: 0.2
+                amplitude: 0.2,
+                waveform: .square  // Square for thick, powerful bass
             ),
             filter: FilterParameters(cutoffFrequency: 400, resonance: 0.4),
             envelope: EnvelopeParameters(

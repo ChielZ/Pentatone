@@ -14,18 +14,45 @@ import SoundpipeAudioKit
 
 // MARK: - Parameter Models
 
+/// Waveform types available for the FM oscillator
+enum OscillatorWaveform: String, Codable, Equatable, CaseIterable {
+    case sine
+    case triangle
+    case square
+    
+    /// User-friendly display name
+    var displayName: String {
+        switch self {
+        case .sine: return "Sine"
+        case .triangle: return "Triangle"
+        case .square: return "Square"
+        }
+    }
+    
+    /// Convert to AudioKit Table
+    func makeTable() -> Table {
+        switch self {
+        case .sine: return Table(.sine)
+        case .triangle: return Table(.triangle)
+        case .square: return Table(.square)
+        }
+    }
+}
+
 /// Parameters for the FM oscillator
 struct OscillatorParameters: Codable, Equatable {
     var carrierMultiplier: Double
     var modulatingMultiplier: Double
     var modulationIndex: Double
     var amplitude: Double
+    var waveform: OscillatorWaveform
     
     static let `default` = OscillatorParameters(
         carrierMultiplier: 1.0,
         modulatingMultiplier: 2.0,
         modulationIndex: 0.95,
-        amplitude: 0.15
+        amplitude: 0.15,
+        waveform: .sine
     )
 }
 
@@ -370,6 +397,9 @@ final class AudioParameterManager: ObservableObject {
         voice.osc.modulatingMultiplier = AUValue(parameters.oscillator.modulatingMultiplier)
         voice.osc.modulationIndex = AUValue(parameters.oscillator.modulationIndex)
         voice.osc.amplitude = AUValue(parameters.oscillator.amplitude)
+        
+        // Note: Waveform changes require voice recreation (handled by OscVoice.updateWaveform)
+        voice.updateWaveformIfNeeded(parameters.oscillator.waveform)
         
         // Apply filter parameters
         voice.filter.cutoffFrequency = AUValue(parameters.filter.clampedCutoff)

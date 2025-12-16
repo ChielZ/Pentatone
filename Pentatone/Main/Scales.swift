@@ -8,8 +8,8 @@
 import Foundation
 
 enum Intonation: String, CaseIterable, Equatable {
-    case ji = "JI"
-    case et = "ET"
+    case ji = "JUST"
+    case et = "EQUAL"
 }
 
 enum Celestial: String, CaseIterable, Equatable {

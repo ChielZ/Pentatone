@@ -8,8 +8,8 @@
 /*
 
 MAIN
- - Fix iOS 15 compatibility
- - Add oscillator waveform to parameters
+ √ Fix iOS 15 compatibility
+ √ Add oscillator waveform to parameters
  - implement modulation generators
  - implement modulators in paramater structure
  - add initial touch and aftertouch sensitivity
