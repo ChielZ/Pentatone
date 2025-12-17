@@ -173,7 +173,7 @@ struct OptionsView: View {
                             .fill(Color("BackgroundColour"))
                             .aspectRatio(1.0, contentMode: .fit)
                             .overlay(
-                                Text("Bb")
+                                Text("B♭")
                                     .foregroundColor(Color("KeyColour5"))
                                     .adaptiveFont("Futura", size: 30)
                                     .minimumScaleFactor(0.3)
@@ -195,7 +195,7 @@ struct OptionsView: View {
                             .fill(Color("BackgroundColour"))
                             .aspectRatio(1.0, contentMode: .fit)
                             .overlay(
-                                Text("F#")
+                                Text("F♯")
                                     .foregroundColor(Color("KeyColour2"))
                                     .adaptiveFont("Futura", size: 30)
                                     .minimumScaleFactor(0.3)

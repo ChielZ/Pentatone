@@ -214,7 +214,7 @@ final class AudioParameterManager: ObservableObject {
     
     func updateDelayMix(_ mix: Double) {
         master.delay.dryWetMix = mix
-        fxDelay?.dryWetMix = AUValue(mix)
+        fxDelay?.dryWetMix = AUValue(1-mix)
     }
     
     func updateDelayTime(_ time: Double) {

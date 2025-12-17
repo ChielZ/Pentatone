@@ -160,7 +160,7 @@ enum EngineManager {
                                 voiceMixer,
                                 time: AUValue(masterParams.delay.time),
                                 feedback: AUValue(masterParams.delay.feedback),
-                                dryWetMix: AUValue(masterParams.delay.dryWetMix),
+                                dryWetMix: AUValue(1-masterParams.delay.dryWetMix),
                                 pingPong: masterParams.delay.pingPong,
                                 maximumDelayTime: 10
                                 )
