@@ -262,20 +262,21 @@ private struct KeyButton: View {
                                 initialTouchX = touchX
                                 lastAftertouchX = touchX  // Initialize for threshold calculation
                                 
-                                // Map initial touch X position to amplitude
-                                /*
-                                AudioParameterManager.shared.mapTouchToAmplitude(
-                                    voiceIndex: voiceIndex,
-                                    touchX: touchX,
-                                    viewWidth: geometry.size.width
-                                )
-                                */
+                                
+                                
                                 // Reset filter cutoff to template default
                                 // This ensures the note starts with the stored cutoff value
                                 AudioParameterManager.shared.resetVoiceFilterToTemplate(at: voiceIndex)
                                 
                                 // Clear the voice override so next touch uses template settings
                                 AudioParameterManager.shared.clearVoiceOverride(at: voiceIndex)
+                                // Map initial touch X position to amplitude
+                                
+                                AudioParameterManager.shared.mapTouchToAmplitude(
+                                    voiceIndex: voiceIndex,
+                                    touchX: touchX,
+                                    viewWidth: geometry.size.width
+                                )
                                 
                                 trigger()
                                 isDimmed = true

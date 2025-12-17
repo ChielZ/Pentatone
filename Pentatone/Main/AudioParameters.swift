@@ -63,7 +63,7 @@ struct FilterParameters: Codable, Equatable {
     
     static let `default` = FilterParameters(
         cutoffFrequency: 1200,
-        resonance: 20.0
+        resonance: 12.0
     )
     
     /// Clamps cutoff to valid range (20 Hz - 20 kHz)
@@ -80,7 +80,7 @@ struct EnvelopeParameters: Codable, Equatable {
     var releaseDuration: Double
     
     static let `default` = EnvelopeParameters(
-        attackDuration: 0.2,
+        attackDuration: 0.01,
         decayDuration: 0.2,
         sustainLevel: 0.7,
         releaseDuration: 0.2
@@ -124,7 +124,7 @@ struct DelayParameters: Codable, Equatable {
     static let `default` = DelayParameters(
         time: 0.5,
         feedback: 0.2,
-        dryWetMix: 1.0,
+        dryWetMix: 0.5,
         pingPong: true
     )
 }
@@ -138,7 +138,7 @@ struct ReverbParameters: Codable, Equatable {
     static let `default` = ReverbParameters(
         feedback: 0.9,
         cutoffFrequency: 10_000,
-        dryWetBalance: 0.3
+        dryWetBalance: 0.2
     )
 }
 
@@ -572,8 +572,8 @@ extension AudioParameterManager {
         initialTouchX: CGFloat,
         currentTouchX: CGFloat,
         viewWidth: CGFloat,
-        sensitivity: Double = 25.0,
-        range: ClosedRange<Double> = 100...20_000,
+        sensitivity: Double = 2.5,
+        range: ClosedRange<Double> = 500...12_000,
         smoothingFactor: Double = 0.35
     ) {
         guard viewWidth > 0 else { return }
@@ -588,11 +588,18 @@ extension AudioParameterManager {
         let movementDelta = currentTouchX - initialTouchX
         
         // Convert movement to frequency change
-        // Multiply by sensitivity to control how responsive it is
-        let frequencyChange = Double(movementDelta) * sensitivity
+        // Multiply by sensitivity to control how responsive it is (linear)
+        // let frequencyChange = Double(movementDelta) * sensitivity
         
-        // Calculate target cutoff: base + change from movement
-        var targetCutoff = baseCutoff + frequencyChange
+        // Sensitivity in octaves per point (0.01 = 100 points per octave) (logarithmic
+        let octaveChange = Double(movementDelta) * (sensitivity / 100.0)
+
+        // Apply exponential scaling
+        var targetCutoff = baseCutoff * pow(2.0, octaveChange)
+        
+        
+        // Calculate target cutoff: base + change from movement (linear)
+        // var targetCutoff = baseCutoff + frequencyChange
         
         // Clamp to valid range
         targetCutoff = max(range.lowerBound, min(range.upperBound, targetCutoff))

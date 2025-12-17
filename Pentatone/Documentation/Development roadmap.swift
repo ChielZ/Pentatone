@@ -10,16 +10,14 @@
 MAIN
  √ Fix iOS 15 compatibility
  √ Add oscillator waveform to parameters
+ √ add initial touch and aftertouch sensitivity
  - implement modulation generators
  - implement modulators in paramater structure
- - add initial touch and aftertouch sensitivity
  - create preset management
  - create developer view for sound editing/storing presets
  - add macro control
  - port engine to tonehive
  - add in app documentation
- 
- 
  
 UI
  √ ET / JI: display as EQUAL / JUST
@@ -32,6 +30,7 @@ MINOR IMPROVEMENTS
  - Change intonation display from ET/JI to EQUAL / JUST
  - Check font warning
  - check delay dry/wet mix parameter direction, 0.0 is now fully wet and 1.0 is fully dry (?)
+ - check: what is the update rate for touch (x position) changes? Filter sweep very choppy, cause?
  
  
  
