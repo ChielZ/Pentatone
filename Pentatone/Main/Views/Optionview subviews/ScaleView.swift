@@ -54,20 +54,24 @@ struct ScaleView: View {
                         }
                 }
             }
-            ZStack { // Row 4
+            ZStack { // Row 4 (top half of image area)
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
-                HStack {
-                    
-                }
             }
-            ZStack { // Row 5
+            ZStack { // Row 5 (bottom half of image area)
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
-                HStack {
-                    
-                }
             }
+            .overlay(
+                GeometryReader { geometry in
+                    Image("JI_CenterMeridian")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: geometry.size.height * 2 + 11)
+                        .offset(y: -(geometry.size.height + 11))
+                        .padding(3)
+                }
+            )
             ZStack { // Row 6 - Musical Key
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
