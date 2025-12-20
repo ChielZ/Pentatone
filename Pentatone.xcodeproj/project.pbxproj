@@ -9,11 +9,17 @@
 /* Begin PBXBuildFile section */
 		7F94C6D22EDE355800CEE22F /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7F94C6D12EDE355800CEE22F /* AudioKit */; };
 		7F94C6DB2EDE3A4D00CEE22F /* SoundpipeAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7F94C6DA2EDE3A4D00CEE22F /* SoundpipeAudioKit */; };
+		7FB1DE752EF75DB800BB38D3 /* KeyboardState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB1DE742EF75DB800BB38D3 /* KeyboardState.swift */; };
+		7FB1DE772EF75E1700BB38D3 /* PHASE_2_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 7FB1DE762EF75E1700BB38D3 /* PHASE_2_COMPLETE.md */; };
+		7FB1DE792EF75E4D00BB38D3 /* PHASE_2_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = 7FB1DE782EF75E4D00BB38D3 /* PHASE_2_ARCHITECTURE.md */; };
 		7FF3103B2EF0955D004F4A98 /* DunneAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7FF3103A2EF0955D004F4A98 /* DunneAudioKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		7F3D45E12EDCF9AC00538543 /* Pentatone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pentatone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FB1DE742EF75DB800BB38D3 /* KeyboardState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardState.swift; sourceTree = "<group>"; };
+		7FB1DE762EF75E1700BB38D3 /* PHASE_2_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHASE_2_COMPLETE.md; sourceTree = "<group>"; };
+		7FB1DE782EF75E4D00BB38D3 /* PHASE_2_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHASE_2_ARCHITECTURE.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -56,6 +62,9 @@
 			children = (
 				7F3D45E32EDCF9AC00538543 /* Pentatone */,
 				7F3D45E22EDCF9AC00538543 /* Products */,
+				7FB1DE742EF75DB800BB38D3 /* KeyboardState.swift */,
+				7FB1DE762EF75E1700BB38D3 /* PHASE_2_COMPLETE.md */,
+				7FB1DE782EF75E4D00BB38D3 /* PHASE_2_ARCHITECTURE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -139,6 +148,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7FB1DE772EF75E1700BB38D3 /* PHASE_2_COMPLETE.md in Resources */,
+				7FB1DE792EF75E4D00BB38D3 /* PHASE_2_ARCHITECTURE.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +160,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7FB1DE752EF75DB800BB38D3 /* KeyboardState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

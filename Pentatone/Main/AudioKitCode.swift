@@ -641,20 +641,22 @@ struct NewVoicePoolTestView: View {
     @State private var statusMessage = "Initializing audio..."
     @State private var currentScaleIndex = 0
     
+    // Phase 2: KeyboardState for frequency management
+    @StateObject private var keyboardState = KeyboardState()
+    
     // Detune controls
     @State private var detuneMode: DetuneMode = .proportional
     @State private var frequencyOffsetRatio: Double = 1.0     // Proportional mode: 1.0 to 1.01
-    @State private var frequencyOffsetHz: Double = 0.0        // Constant mode: 0 to 10 Hz
+    @State private var frequencyOffsetHz: Double = 0.0        // Constant mode: 0 to 2.5 Hz
     
-    // Test scale
+    // Test scale (synced with keyboardState)
     private var testScale: Scale {
-        ScalesCatalog.all[currentScaleIndex]
+        keyboardState.currentScale
     }
     
-    // Compute test frequencies for the first 9 keys
+    // Test frequencies from keyboardState
     private var testFrequencies: [Double] {
-        let allFreqs = makeKeyFrequencies(for: testScale)
-        return Array(allFreqs.prefix(9))
+        Array(keyboardState.keyFrequencies.prefix(9))
     }
     
     var body: some View {
@@ -691,6 +693,27 @@ struct NewVoicePoolTestView: View {
                                 .buttonStyle(.borderedProminent)
                                 .disabled(currentScaleIndex >= ScalesCatalog.all.count - 1)
                             }
+                            
+                            // Phase 2: Show KeyboardState info
+                            HStack(spacing: 15) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Key: \(keyboardState.currentKey.rawValue)")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    Text("Intonation: \(keyboardState.currentScale.intonation.rawValue)")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                                
+                                Button("Cycle Key") {
+                                    keyboardState.cycleKey(forward: true)
+                                }
+                                .buttonStyle(.bordered)
+                                .font(.caption)
+                            }
+                            .padding(.horizontal)
                         }
                         .padding()
                         
@@ -965,6 +988,9 @@ struct NewVoicePoolTestView: View {
         let newIndex = currentScaleIndex + delta
         guard newIndex >= 0 && newIndex < ScalesCatalog.all.count else { return }
         currentScaleIndex = newIndex
+        
+        // Phase 2: Update KeyboardState
+        keyboardState.currentScale = ScalesCatalog.all[newIndex]
     }
     
     // MARK: - Key Color Calculation
