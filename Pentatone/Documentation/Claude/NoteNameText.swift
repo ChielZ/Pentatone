@@ -39,10 +39,21 @@ struct NoteNameText: View {
             
             // Accidental in Arial Unicode MS (if present)
             if let accidental = noteName.accidental {
-                Text(accidental)
-                    .foregroundColor(color)
-                    .font(.custom("Arial Unicode MS", size: adaptiveSize * 0.7)) // Slightly smaller for better visual balance
-                    .baselineOffset(adaptiveSize * 0.15) // Fine-tune vertical alignment
+                // For double sharps/flats, use tighter kerning
+                if accidental.count > 1 {
+                    // Double sharp or double flat
+                    Text(accidental)
+                        .foregroundColor(color)
+                        .font(.custom("Arial Unicode MS", size: adaptiveSize * 0.7))
+                        .baselineOffset(adaptiveSize * 0.15)
+                        .kerning(-adaptiveSize * 0.18) // Tight kerning for double accidentals
+                } else {
+                    // Single sharp or flat
+                    Text(accidental)
+                        .foregroundColor(color)
+                        .font(.custom("Arial Unicode MS", size: adaptiveSize * 0.7))
+                        .baselineOffset(adaptiveSize * 0.15)
+                }
             }
         }
     }
