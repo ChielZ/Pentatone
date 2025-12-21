@@ -55,7 +55,7 @@ final class PolyphonicVoice {
     private let stereoMixer: Mixer
     
     /// Low-pass filter processing the stereo signal
-    let filter: LowPassFilter
+    let filter: KorgLowPassFilter
     
     /// Amplitude envelope shaping the stereo signal
     let envelope: AmplitudeEnvelope
@@ -153,7 +153,7 @@ final class PolyphonicVoice {
         self.stereoMixer = Mixer(panLeft, panRight)
         
         // Create filter processing the stereo signal
-        self.filter = LowPassFilter(
+        self.filter = KorgLowPassFilter(
             stereoMixer,
             cutoffFrequency: AUValue(parameters.filter.clampedCutoff),
             resonance: AUValue(parameters.filter.resonance)
@@ -224,8 +224,9 @@ final class PolyphonicVoice {
             rightFreq = currentFrequency - frequencyOffsetHz
         }
         
-        oscLeft.baseFrequency = AUValue(leftFreq)
-        oscRight.baseFrequency = AUValue(rightFreq)
+        // Apply frequencies with 0 ramp duration for instant pitch changes
+        oscLeft.$baseFrequency.ramp(to: Float(leftFreq), duration: 0)
+        oscRight.$baseFrequency.ramp(to: Float(rightFreq), duration: 0)
     }
     
     // MARK: - Triggering

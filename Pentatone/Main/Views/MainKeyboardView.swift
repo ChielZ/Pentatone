@@ -234,6 +234,9 @@ private struct KeyButton: View {
     // NEW: Store allocated voice for new system
     @State private var allocatedVoice: PolyphonicVoice? = nil
     
+    // NEW: Track last smoothed cutoff for aftertouch (matches old system's lastFilterCutoffs)
+    @State private var lastSmoothedCutoff: Double? = nil
+    
     // Minimum movement threshold (in points) before aftertouch responds
     private let movementThreshold: CGFloat = 1.0
     
@@ -325,6 +328,13 @@ private struct KeyButton: View {
         let voice = voicePool.allocateVoice(frequency: frequency, forKey: keyIndex)
         allocatedVoice = voice
         
+        // Reset filter to template default (matching old system behavior)
+        let templateCutoff = AudioParameterManager.shared.voiceTemplate.filter.cutoffFrequency
+        voice.filter.cutoffFrequency = AUValue(templateCutoff)
+        
+        // Clear smoothing state (start fresh for new note)
+        lastSmoothedCutoff = nil
+        
         // Use the same amplitude mapping as the old system
         // Normalize touch position to 0...1
         let normalized = max(0.0, min(1.0, touchX / viewWidth))
@@ -339,31 +349,42 @@ private struct KeyButton: View {
     private func handleNewSystemAftertouch(initialX: CGFloat, currentX: CGFloat, viewWidth: CGFloat) {
         guard let voice = allocatedVoice else { return }
         
-        // Use the same logarithmic/exponential mapping as the old system
-        // This matches AudioParameterManager.mapAftertouchToFilterCutoffSmoothed behavior
+        // Use the EXACT same algorithm as the old system's mapAftertouchToFilterCutoffSmoothed
         
-        // Get the base cutoff from voice parameters
+        // Get the base cutoff from template (what the note started with)
         let baseCutoff = AudioParameterManager.shared.voiceTemplate.filter.cutoffFrequency
         
         // Calculate movement delta from initial touch
         let movementDelta = currentX - initialX
         
-        // Sensitivity in octaves per point (matching old system)
+        // Sensitivity in octaves per point (matching old system: 2.5)
         let sensitivity = 2.5
         let octaveChange = Double(movementDelta) * (sensitivity / 100.0)
         
         // Apply exponential scaling (logarithmic frequency response)
         var targetCutoff = baseCutoff * pow(2.0, octaveChange)
         
-        // Clamp to valid range (matching old system)
+        // Clamp to valid range (matching old system: 500-12000 Hz)
         let range = 500.0...12_000.0
         targetCutoff = max(range.lowerBound, min(range.upperBound, targetCutoff))
         
-        // Apply smoothing (matching old system's smoothingFactor of 0.5)
+        // Get current cutoff for smoothing
+        let currentCutoff: Double
+        if let lastCutoff = lastSmoothedCutoff {
+            currentCutoff = lastCutoff
+        } else {
+            // First aftertouch - start from base cutoff
+            currentCutoff = baseCutoff
+        }
+        
+        // Apply linear interpolation (lerp) for smoothing
+        // Matching old system: smoothingFactor = 0.5
         let smoothingFactor = 0.5
-        let currentCutoff = Double(voice.filter.cutoffFrequency)
         let interpolationAmount = 1.0 - smoothingFactor
         let smoothedCutoff = currentCutoff + (targetCutoff - currentCutoff) * interpolationAmount
+        
+        // Store for next iteration (maintains smoothing state)
+        lastSmoothedCutoff = smoothedCutoff
         
         // Apply to voice filter
         voice.filter.cutoffFrequency = AUValue(smoothedCutoff)
@@ -378,6 +399,9 @@ private struct KeyButton: View {
         // Release voice back to pool
         voicePool.releaseVoice(forKey: keyIndex)
         allocatedVoice = nil
+        
+        // Clear smoothing state (matching old system's lastFilterCutoffs cleanup)
+        lastSmoothedCutoff = nil
         
         print("🎹 Key \(keyIndex): Released voice")
     }
