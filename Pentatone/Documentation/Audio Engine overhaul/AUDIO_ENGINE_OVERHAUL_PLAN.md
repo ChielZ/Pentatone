@@ -150,6 +150,14 @@ This document outlines a phased approach to overhauling the audio engine from a 
 ### Phase 5: Add Modulation System (MODULATION)
 **Goal:** Implement LFOs and modulation envelopes
 
+Phase 5 is large and complex, it would be wise to split it in to sub-stages 
+1. 5A: Foundation (modulation data structures)
+2. 5B: Modulation Envelopes (One hardwired to FMOscillator ModulationIndex, the second one with routable destinations
+3. 5C: LFOs per voice and global
+5. 5D: Touch & Key tracking 
+
+
+GENERAL INFORMATION FOR PHASE 5:
 
 **Files to create:**
 - `ModulationSystem.swift` - Modulator definitions and routing
