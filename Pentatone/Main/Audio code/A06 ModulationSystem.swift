@@ -141,12 +141,51 @@ struct LFOParameters: Codable, Equatable {
         isEnabled: false
     )
     
-    // Phase 5B/5C: Will implement actual LFO value generation
-    // For now, this is just a placeholder structure
+    /// Calculate the current LFO value based on phase (0.0 - 1.0)
+    /// - Parameter phase: Current phase of the LFO (0.0 = start, 1.0 = end of cycle)
+    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar)
     func currentValue(phase: Double) -> Double {
-        // TODO: Phase 5C - Implement actual LFO oscillation
-        // Will use manual waveform calculation based on phase
-        return 0.0
+        guard isEnabled else { return 0.0 }
+        
+        // Normalize phase to 0-1 range (handle wraparound)
+        let normalizedPhase = phase - floor(phase)
+        
+        let rawValue: Double
+        
+        switch waveform {
+        case .sine:
+            // Sine wave: smooth oscillation
+            rawValue = sin(normalizedPhase * 2.0 * .pi)
+            
+        case .triangle:
+            // Triangle wave: linear rise and fall
+            // 0.0-0.5: rise from -1 to +1
+            // 0.5-1.0: fall from +1 to -1
+            if normalizedPhase < 0.5 {
+                rawValue = (normalizedPhase * 4.0) - 1.0  // -1 to +1
+            } else {
+                rawValue = 3.0 - (normalizedPhase * 4.0)  // +1 to -1
+            }
+            
+        case .square:
+            // Square wave: instant transitions
+            // 0.0-0.5: +1
+            // 0.5-1.0: -1
+            rawValue = normalizedPhase < 0.5 ? 1.0 : -1.0
+            
+        case .sawtooth:
+            // Sawtooth wave: linear rise, instant drop
+            // 0.0-1.0: -1 to +1 (then instant drop to -1)
+            rawValue = (normalizedPhase * 2.0) - 1.0
+            
+        case .reverseSawtooth:
+            // Reverse sawtooth: instant rise, linear fall
+            // 0.0-1.0: +1 to -1 (instant rise from -1 to +1 at start)
+            rawValue = 1.0 - (normalizedPhase * 2.0)
+        }
+        
+        // Scale by amount (bipolar modulation)
+        return rawValue * amount
     }
 }
 
@@ -353,10 +392,51 @@ struct GlobalLFOParameters: Codable, Equatable {
         isEnabled: false
     )
     
-    // Phase 5C: Will implement actual LFO value generation
+    /// Calculate the current LFO value based on phase (0.0 - 1.0)
+    /// - Parameter phase: Current phase of the LFO (0.0 = start, 1.0 = end of cycle)
+    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar)
     func currentValue(phase: Double) -> Double {
-        // TODO: Phase 5C - Implement actual LFO oscillation
-        return 0.0
+        guard isEnabled else { return 0.0 }
+        
+        // Normalize phase to 0-1 range (handle wraparound)
+        let normalizedPhase = phase - floor(phase)
+        
+        let rawValue: Double
+        
+        switch waveform {
+        case .sine:
+            // Sine wave: smooth oscillation
+            rawValue = sin(normalizedPhase * 2.0 * .pi)
+            
+        case .triangle:
+            // Triangle wave: linear rise and fall
+            // 0.0-0.5: rise from -1 to +1
+            // 0.5-1.0: fall from +1 to -1
+            if normalizedPhase < 0.5 {
+                rawValue = (normalizedPhase * 4.0) - 1.0  // -1 to +1
+            } else {
+                rawValue = 3.0 - (normalizedPhase * 4.0)  // +1 to -1
+            }
+            
+        case .square:
+            // Square wave: instant transitions
+            // 0.0-0.5: +1
+            // 0.5-1.0: -1
+            rawValue = normalizedPhase < 0.5 ? 1.0 : -1.0
+            
+        case .sawtooth:
+            // Sawtooth wave: linear rise, instant drop
+            // 0.0-1.0: -1 to +1 (then instant drop to -1)
+            rawValue = (normalizedPhase * 2.0) - 1.0
+            
+        case .reverseSawtooth:
+            // Reverse sawtooth: instant rise, linear fall
+            // 0.0-1.0: +1 to -1 (instant rise from -1 to +1 at start)
+            rawValue = 1.0 - (normalizedPhase * 2.0)
+        }
+        
+        // Scale by amount (bipolar modulation)
+        return rawValue * amount
     }
 }
 
@@ -385,14 +465,29 @@ struct ModulationState {
     // Key tracking
     var currentFrequency: Double = 440.0   // Current note frequency
     
+    // User-controlled base values (before modulation)
+    // These are set by touch gestures and used as the base for modulation
+    var baseAmplitude: Double = 0.5        // User's desired amplitude (0.0 - 1.0)
+    var baseFilterCutoff: Double = 1000.0  // User's desired filter cutoff (Hz)
+    
     /// Reset state when voice is triggered
-    mutating func reset(frequency: Double, touchX: Double) {
+    /// - Parameters:
+    ///   - frequency: The note frequency being triggered
+    ///   - touchX: The initial touch X position (0.0 - 1.0)
+    ///   - resetLFOPhase: Whether to reset voice LFO phase (depends on LFO reset mode)
+    mutating func reset(frequency: Double, touchX: Double, resetLFOPhase: Bool = true) {
         modulatorEnvelopeTime = 0.0
         auxiliaryEnvelopeTime = 0.0
         isGateOpen = true
         modulatorSustainLevel = 0.0
         auxiliarySustainLevel = 0.0
-        voiceLFOPhase = 0.0
+        
+        // Only reset LFO phase if requested (trigger/sync mode)
+        // Free mode keeps the phase running
+        if resetLFOPhase {
+            voiceLFOPhase = 0.0
+        }
+        
         initialTouchX = touchX
         currentTouchX = touchX
         currentFrequency = frequency
@@ -507,6 +602,88 @@ struct ModulationRouter {
             return 2.0   // ±2 seconds
         case .delayMix:
             return 1.0   // 0-1
+        }
+    }
+    
+    // MARK: - LFO Modulation (Phase 5C)
+    
+    /// Apply LFO modulation to a base value
+    /// LFOs provide bipolar modulation (oscillate around center value)
+    /// - Parameters:
+    ///   - baseValue: The unmodulated parameter value
+    ///   - lfoValue: The LFO value (-1.0 to +1.0, already scaled by amount)
+    ///   - destination: The destination being modulated
+    /// - Returns: The modulated value
+    static func applyLFOModulation(
+        baseValue: Double,
+        lfoValue: Double,
+        destination: ModulationDestination
+    ) -> Double {
+        // LFO provides bipolar modulation around the base value
+        // lfoValue is already in range -1.0 to +1.0 (from LFOParameters.currentValue)
+        
+        switch destination {
+        case .modulationIndex:
+            // FM modulation index: scale by typical range
+            // lfoValue = ±1.0 means ±5.0 modIndex swing
+            let swing = lfoValue * 5.0
+            return max(0.0, min(10.0, baseValue + swing))
+            
+        case .filterCutoff:
+            // Filter cutoff: exponential scaling (semitones for musical intervals)
+            // lfoValue = ±1.0 means ±12 semitones (±1 octave)
+            let semitones = lfoValue * 12.0
+            let multiplier = pow(2.0, semitones / 12.0)
+            return max(20.0, min(22050.0, baseValue * multiplier))
+            
+        case .oscillatorAmplitude:
+            // Amplitude: linear scaling
+            // lfoValue = ±1.0 means ±0.5 amplitude swing
+            let swing = lfoValue * 0.5
+            return max(0.0, min(1.0, baseValue + swing))
+            
+        case .oscillatorBaseFrequency:
+            // Frequency: exponential scaling (semitones)
+            // lfoValue = ±1.0 means ±2 semitones (vibrato)
+            let semitones = lfoValue * 2.0
+            let multiplier = pow(2.0, semitones / 12.0)
+            return baseValue * multiplier
+            
+        case .modulatingMultiplier:
+            // FM modulator ratio: linear scaling
+            // lfoValue = ±1.0 means ±2.0 ratio swing
+            let swing = lfoValue * 2.0
+            return max(0.1, min(20.0, baseValue + swing))
+            
+        case .stereoSpreadAmount:
+            // Stereo spread: linear scaling
+            // lfoValue = ±1.0 means ±0.5 spread swing
+            let swing = lfoValue * 0.5
+            return max(0.0, baseValue + swing)
+            
+        case .voiceLFOFrequency:
+            // LFO frequency meta-modulation: linear scaling
+            // lfoValue = ±1.0 means ±2 Hz swing
+            let swing = lfoValue * 2.0
+            return max(0.01, min(10.0, baseValue + swing))
+            
+        case .voiceLFOAmount:
+            // LFO amount meta-modulation: linear scaling
+            // lfoValue = ±1.0 means ±0.5 amount swing
+            let swing = lfoValue * 0.5
+            return max(0.0, min(1.0, baseValue + swing))
+            
+        case .delayTime:
+            // Delay time: linear scaling
+            // lfoValue = ±1.0 means ±0.5 second swing
+            let swing = lfoValue * 0.5
+            return max(0.0, min(2.0, baseValue + swing))
+            
+        case .delayMix:
+            // Delay mix: linear scaling
+            // lfoValue = ±1.0 means ±0.3 mix swing
+            let swing = lfoValue * 0.3
+            return max(0.0, min(1.0, baseValue + swing))
         }
     }
 }

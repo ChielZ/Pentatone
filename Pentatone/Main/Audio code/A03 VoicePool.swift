@@ -8,6 +8,7 @@
 import Foundation
 import AudioKit
 import AudioKitEX
+import DunneAudioKit
 
 /// Manages allocation and lifecycle of polyphonic voices
 /// Uses round-robin allocation with availability checking and voice stealing
@@ -251,6 +252,16 @@ final class VoicePool {
     /// Control-rate timer for modulation updates (Phase 5B+)
     private var modulationTimer: DispatchSourceTimer?
     
+    /// Global modulation state (Phase 5C)
+    private var globalModulationState = GlobalModulationState()
+    
+    /// Current tempo for tempo-synced modulation (Phase 5C)
+    var currentTempo: Double = 120.0 {
+        didSet {
+            globalModulationState.currentTempo = currentTempo
+        }
+    }
+    
     /// Updates global LFO parameters
     func updateGlobalLFO(_ parameters: GlobalLFOParameters) {
         globalLFO = parameters
@@ -295,18 +306,105 @@ final class VoicePool {
         print("🎵 Modulation system stopped")
     }
     
-    /// Updates modulation for all active voices (Phase 5B)
+    /// Updates modulation for all active voices (Phase 5B + 5C)
     /// Called by control-rate timer at 200 Hz on background thread
     private func updateModulation() {
         let deltaTime = ControlRateConfig.updateInterval
         
-        // Phase 5C: Update global LFO phase will be added here
-        let globalLFOValue = 0.0  // Placeholder for Phase 5C
+        // Phase 5C: Update global LFO phase
+        let globalLFOValue = updateGlobalLFOPhase(deltaTime: deltaTime)
         
-        // Update all active voices
+        // Apply global LFO to global-level destinations (delay, reverb, etc.)
+        applyGlobalLFOToGlobalParameters(value: globalLFOValue)
+        
+        // Update all active voices (voice envelopes + voice LFO + global LFO)
         // Note: This runs on background thread, AudioKit parameter updates are thread-safe
         for voice in voices where !voice.isAvailable {
-            voice.applyModulation(globalLFOValue: globalLFOValue, deltaTime: deltaTime)
+            voice.applyModulation(
+                globalLFOValue: globalLFOValue,
+                globalLFODestination: globalLFO.destination,
+                deltaTime: deltaTime,
+                currentTempo: currentTempo
+            )
+        }
+    }
+    
+    // MARK: - Global LFO Phase Management (Phase 5C)
+    
+    /// Updates the global LFO phase and returns the current LFO value
+    /// - Parameter deltaTime: Time since last update (typically 0.005 seconds)
+    /// - Returns: Current global LFO value (-1.0 to +1.0, scaled by amount)
+    private func updateGlobalLFOPhase(deltaTime: Double) -> Double {
+        guard globalLFO.isEnabled else { return 0.0 }
+        
+        // Calculate phase increment based on frequency mode
+        let phaseIncrement: Double
+        
+        switch globalLFO.frequencyMode {
+        case .hertz:
+            // Direct Hz: phase increment = frequency * deltaTime
+            phaseIncrement = globalLFO.frequency * deltaTime
+            
+        case .tempoSync:
+            // Tempo sync: globalLFO.frequency is a tempo multiplier
+            // e.g., 1.0 = quarter note, 2.0 = eighth note, 0.5 = half note
+            let beatsPerSecond = currentTempo / 60.0
+            let cyclesPerSecond = beatsPerSecond * globalLFO.frequency
+            phaseIncrement = cyclesPerSecond * deltaTime
+        }
+        
+        // Update phase (global LFO is always free-running or sync, never trigger)
+        globalModulationState.globalLFOPhase += phaseIncrement
+        
+        // Wrap phase to 0-1 range
+        if globalModulationState.globalLFOPhase >= 1.0 {
+            globalModulationState.globalLFOPhase -= floor(globalModulationState.globalLFOPhase)
+        }
+        
+        // Calculate and return LFO value
+        return globalLFO.currentValue(phase: globalModulationState.globalLFOPhase)
+    }
+    
+    /// Applies global LFO modulation to global-level parameters (delay, reverb)
+    /// - Parameter value: Current global LFO value (-1.0 to +1.0, scaled by amount)
+    private func applyGlobalLFOToGlobalParameters(value: Double) {
+        guard globalLFO.isEnabled, value != 0.0 else { return }
+        
+        let destination = globalLFO.destination
+        
+        // Only apply to global-level destinations
+        guard destination.isGlobalLevel else { return }
+        
+        switch destination {
+        case .delayTime:
+            // Modulate delay time
+            guard let delay = fxDelay else { return }
+            let baseValue = Double(delay.time)
+            let modulated = ModulationRouter.applyLFOModulation(
+                baseValue: baseValue,
+                lfoValue: value,
+                destination: destination
+            )
+            delay.time = AUValue(modulated)
+            
+        case .delayMix:
+            // Modulate delay mix
+            guard let delay = fxDelay else { return }
+            let baseValue = 1.0 - Double(delay.dryWetMix)  // Convert to our convention
+            let modulated = ModulationRouter.applyLFOModulation(
+                baseValue: baseValue,
+                lfoValue: value,
+                destination: destination
+            )
+            delay.dryWetMix = AUValue(1.0 - modulated)  // Convert back
+            
+        case .oscillatorAmplitude, .oscillatorBaseFrequency, .modulationIndex,
+             .modulatingMultiplier, .filterCutoff, .stereoSpreadAmount,
+             .voiceLFOFrequency, .voiceLFOAmount:
+            // These are voice-level destinations
+            // They will be applied by PolyphonicVoice.applyGlobalLFO() instead
+            // (Each voice needs to apply the global LFO to its own parameters)
+            break
         }
     }
     

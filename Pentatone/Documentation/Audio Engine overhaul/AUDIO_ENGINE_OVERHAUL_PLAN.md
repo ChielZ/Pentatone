@@ -230,7 +230,7 @@ GENERAL INFORMATION FOR PHASE 5:
 >> INSERTED INTO PLAN AS REFERENCE FOR STAGE 5: 
 THIS MY FULL CONCEPT FOR THE FINAL STRUCTURE OF EDITABLE PARAMETERS / SOUND EDITING SCREENS
  
- 1. VOICE [the voice strutucre itself is already implemented]
+ 1. VOICE [the voice structure itself is already implemented]
  
  a) Oscillator (the same parameter values will be applied to both the left-panned and right-panned FMOscillators
  - Waveform (shared between Carrier and Modulator, options: sine, triangle, square)

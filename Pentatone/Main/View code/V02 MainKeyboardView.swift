@@ -294,9 +294,9 @@ private struct KeyButton: View {
         let voice = voicePool.allocateVoice(frequency: frequency, forKey: keyIndex)
         allocatedVoice = voice
         
-        // Reset filter to template default
+        // Reset filter to template default (this is now the base value)
         let templateCutoff = AudioParameterManager.shared.voiceTemplate.filter.cutoffFrequency
-        voice.filter.cutoffFrequency = AUValue(templateCutoff)
+        voice.setFilterCutoffFromTouch(templateCutoff)
         
         // Clear smoothing state (start fresh for new note)
         lastSmoothedCutoff = nil
@@ -305,9 +305,8 @@ private struct KeyButton: View {
         // Normalize touch position to 0...1
         let normalized = max(0.0, min(1.0, touchX / viewWidth))
         
-        // Apply amplitude to voice
-        voice.oscLeft.amplitude = AUValue(normalized)
-        voice.oscRight.amplitude = AUValue(normalized)
+        // Apply amplitude using the new method that stores base value
+        voice.setAmplitudeFromTouch(normalized)
         
         print("🎹 Key \(keyIndex): Allocated voice, freq \(String(format: "%.2f", frequency)) Hz, amp \(String(format: "%.2f", normalized))")
     }
@@ -349,8 +348,8 @@ private struct KeyButton: View {
         // Store for next iteration (maintains smoothing state)
         lastSmoothedCutoff = smoothedCutoff
         
-        // Apply to voice filter
-        voice.filter.cutoffFrequency = AUValue(smoothedCutoff)
+        // Apply using the new method that stores base value
+        voice.setFilterCutoffFromTouch(smoothedCutoff)
     }
     
     private func handleRelease() {

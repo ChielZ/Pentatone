@@ -255,7 +255,9 @@ final class PolyphonicVoice {
         triggerTime = Date()
         
         // Phase 5: Initialize modulation state
-        modulationState.reset(frequency: currentFrequency, touchX: 0.5)
+        // Note: voiceLFOPhase is only reset if LFO reset mode is .trigger or .sync
+        let shouldResetLFO = voiceModulation.voiceLFO.resetMode != .free
+        modulationState.reset(frequency: currentFrequency, touchX: 0.5, resetLFOPhase: shouldResetLFO)
     }
     
     /// Releases this voice (starts envelope release)
@@ -301,6 +303,37 @@ final class PolyphonicVoice {
         // Note: Waveform changes require recreation (not supported dynamically)
     }
     
+    // MARK: - Touch-Based Control (Phase 5C fix)
+    
+    /// Sets the amplitude from touch input
+    /// This updates the base amplitude in modulation state, which LFOs will modulate
+    /// - Parameter amplitude: The desired amplitude (0.0 - 1.0)
+    func setAmplitudeFromTouch(_ amplitude: Double) {
+        // Clamp to valid range
+        let clamped = max(0.0, min(1.0, amplitude))
+        
+        // Store as base value for modulation
+        modulationState.baseAmplitude = clamped
+        
+        // Apply directly to oscillators (will be overwritten by modulation if LFO is active)
+        oscLeft.amplitude = AUValue(clamped)
+        oscRight.amplitude = AUValue(clamped)
+    }
+    
+    /// Sets the filter cutoff from touch input
+    /// This updates the base cutoff in modulation state, which LFOs will modulate
+    /// - Parameter cutoff: The desired filter cutoff frequency in Hz
+    func setFilterCutoffFromTouch(_ cutoff: Double) {
+        // Clamp to valid range
+        let clamped = max(20.0, min(22050.0, cutoff))
+        
+        // Store as base value for modulation
+        modulationState.baseFilterCutoff = clamped
+        
+        // Apply directly to filter (will be overwritten by modulation if LFO is active)
+        filter.cutoffFrequency = AUValue(clamped)
+    }
+    
     /// Updates filter parameters
     func updateFilterParameters(_ parameters: FilterParameters) {
         filter.cutoffFrequency = AUValue(parameters.clampedCutoff)
@@ -325,15 +358,25 @@ final class PolyphonicVoice {
     
     // MARK: - Modulation Application (Phase 5B)
     
-    /// Applies modulation from envelopes (Phase 5B)
+    /// Applies modulation from envelopes and LFOs (Phase 5B + 5C)
     /// This method is called from the control-rate timer (200 Hz)
     /// - Parameters:
     ///   - globalLFOValue: Current value from global LFO (Phase 5C)
+    ///   - globalLFODestination: Destination for global LFO modulation
     ///   - deltaTime: Time since last update (typically 0.005 seconds at 200 Hz)
-    func applyModulation(globalLFOValue: Double, deltaTime: Double) {
+    ///   - currentTempo: Current tempo in BPM for tempo sync (Phase 5C)
+    func applyModulation(
+        globalLFOValue: Double,
+        globalLFODestination: ModulationDestination,
+        deltaTime: Double,
+        currentTempo: Double = 120.0
+    ) {
         // Update envelope times
         modulationState.modulatorEnvelopeTime += deltaTime
         modulationState.auxiliaryEnvelopeTime += deltaTime
+        
+        // Update voice LFO phase (Phase 5C)
+        updateVoiceLFOPhase(deltaTime: deltaTime, tempo: currentTempo)
         
         // Calculate envelope values
         let modulatorValue: Double
@@ -363,6 +406,9 @@ final class PolyphonicVoice {
             )
         }
         
+        // Calculate voice LFO value (Phase 5C)
+        let voiceLFOValue = voiceModulation.voiceLFO.currentValue(phase: modulationState.voiceLFOPhase)
+        
         // Apply modulator envelope to modulationIndex (hardwired)
         if voiceModulation.modulatorEnvelope.isEnabled {
             let baseModIndex = 0.0  // Always start from 0 for modulator envelope
@@ -384,8 +430,67 @@ final class PolyphonicVoice {
             applyAuxiliaryEnvelope(value: auxiliaryValue)
         }
         
-        // Phase 5C: LFO modulation will be added here
+        // Phase 5C: Apply voice LFO modulation
+        if voiceModulation.voiceLFO.isEnabled {
+            applyVoiceLFO(value: voiceLFOValue)
+        }
+        
+        // Phase 5C: Apply global LFO modulation (passed from VoicePool)
+        if globalLFOValue != 0.0 {
+            applyGlobalLFO(value: globalLFOValue, destination: globalLFODestination)
+        }
+        
         // Phase 5D: Touch/key tracking will be added here
+    }
+    
+    // MARK: - Voice LFO Phase Update (Phase 5C)
+    
+    /// Updates the voice LFO phase based on time and tempo
+    private func updateVoiceLFOPhase(deltaTime: Double, tempo: Double) {
+        guard voiceModulation.voiceLFO.isEnabled else { return }
+        
+        let lfo = voiceModulation.voiceLFO
+        
+        // Calculate phase increment based on frequency mode
+        let phaseIncrement: Double
+        
+        switch lfo.frequencyMode {
+        case .hertz:
+            // Direct Hz: phase increment = frequency * deltaTime
+            phaseIncrement = lfo.frequency * deltaTime
+            
+        case .tempoSync:
+            // Tempo sync: lfo.frequency is a tempo multiplier
+            // e.g., 1.0 = quarter note, 2.0 = eighth note, 0.5 = half note
+            let beatsPerSecond = tempo / 60.0
+            let cyclesPerSecond = beatsPerSecond * lfo.frequency
+            phaseIncrement = cyclesPerSecond * deltaTime
+        }
+        
+        // Update phase based on reset mode
+        switch lfo.resetMode {
+        case .free:
+            // Free running: just increment and wrap
+            modulationState.voiceLFOPhase += phaseIncrement
+            if modulationState.voiceLFOPhase >= 1.0 {
+                modulationState.voiceLFOPhase -= floor(modulationState.voiceLFOPhase)
+            }
+            
+        case .trigger:
+            // Trigger reset: phase was reset to 0 in trigger(), now just increment
+            modulationState.voiceLFOPhase += phaseIncrement
+            if modulationState.voiceLFOPhase >= 1.0 {
+                modulationState.voiceLFOPhase -= floor(modulationState.voiceLFOPhase)
+            }
+            
+        case .sync:
+            // Tempo sync: same as trigger but could be reset by external clock
+            // For now, just increment (external sync will be added later if needed)
+            modulationState.voiceLFOPhase += phaseIncrement
+            if modulationState.voiceLFOPhase >= 1.0 {
+                modulationState.voiceLFOPhase -= floor(modulationState.voiceLFOPhase)
+            }
+        }
     }
     
     /// Applies the auxiliary envelope to its routed destination
@@ -480,6 +585,180 @@ final class PolyphonicVoice {
         case .delayTime, .delayMix:
             // These are global-level, shouldn't be routed from voice envelope
             break
+        }
+    }
+    
+    // MARK: - Voice LFO Application (Phase 5C)
+    
+    /// Applies the voice LFO to its routed destination
+    /// Voice LFO provides per-voice modulation (each voice has independent phase)
+    private func applyVoiceLFO(value: Double) {
+        let destination = voiceModulation.voiceLFO.destination
+        
+        // Only apply to voice-level destinations
+        guard destination.isVoiceLevel else { return }
+        
+        // Get base value - use user-controlled values for amplitude/filter, current values for others
+        let baseValue: Double
+        
+        switch destination {
+        case .modulationIndex:
+            baseValue = Double(oscLeft.modulationIndex)
+            
+        case .filterCutoff:
+            // Use user-controlled base value from modulation state
+            baseValue = modulationState.baseFilterCutoff
+            
+        case .oscillatorAmplitude:
+            // Use user-controlled base value from modulation state
+            baseValue = modulationState.baseAmplitude
+            
+        case .oscillatorBaseFrequency:
+            baseValue = currentFrequency
+            
+        case .modulatingMultiplier:
+            baseValue = Double(oscLeft.modulatingMultiplier)
+            
+        case .stereoSpreadAmount:
+            baseValue = detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
+            
+        case .voiceLFOFrequency, .voiceLFOAmount:
+            // LFO meta-modulation (LFO modulating itself)
+            // These would create interesting recursive effects
+            // For now, skip to avoid complexity
+            return
+            
+        case .delayTime, .delayMix:
+            // These are global, not voice-level
+            return
+        }
+        
+        // Apply LFO modulation
+        let modulated = ModulationRouter.applyLFOModulation(
+            baseValue: baseValue,
+            lfoValue: value,
+            destination: destination
+        )
+        
+        // Set the modulated parameter
+        switch destination {
+        case .modulationIndex:
+            oscLeft.modulationIndex = AUValue(modulated)
+            oscRight.modulationIndex = AUValue(modulated)
+            
+        case .filterCutoff:
+            filter.cutoffFrequency = AUValue(modulated)
+            
+        case .oscillatorAmplitude:
+            oscLeft.amplitude = AUValue(modulated)
+            oscRight.amplitude = AUValue(modulated)
+            
+        case .oscillatorBaseFrequency:
+            // Update frequency with modulation
+            currentFrequency = modulated
+            updateOscillatorFrequencies()
+            
+        case .modulatingMultiplier:
+            oscLeft.modulatingMultiplier = AUValue(modulated)
+            oscRight.modulatingMultiplier = AUValue(modulated)
+            
+        case .stereoSpreadAmount:
+            if detuneMode == .proportional {
+                frequencyOffsetRatio = modulated
+            } else {
+                frequencyOffsetHz = modulated
+            }
+            
+        case .voiceLFOFrequency, .voiceLFOAmount, .delayTime, .delayMix:
+            break  // Already handled above
+        }
+    }
+    
+    // MARK: - Global LFO Application (Phase 5C)
+    
+    /// Applies the global LFO to its routed destination
+    /// Global LFO is calculated in VoicePool and passed to all voices
+    /// This enables synchronized modulation across all voices
+    /// - Parameters:
+    ///   - value: The current global LFO value (-1.0 to +1.0, scaled by amount)
+    ///   - destination: The destination parameter to modulate
+    private func applyGlobalLFO(value: Double, destination: ModulationDestination) {
+        // Only apply to voice-level destinations
+        // (Global-level destinations are handled by VoicePool directly)
+        guard destination.isVoiceLevel else { return }
+        
+        // Get base value - use user-controlled values for amplitude/filter, current values for others
+        let baseValue: Double
+        
+        switch destination {
+        case .modulationIndex:
+            baseValue = Double(oscLeft.modulationIndex)
+            
+        case .filterCutoff:
+            // Use user-controlled base value from modulation state
+            baseValue = modulationState.baseFilterCutoff
+            
+        case .oscillatorAmplitude:
+            // Use user-controlled base value from modulation state
+            baseValue = modulationState.baseAmplitude
+            
+        case .oscillatorBaseFrequency:
+            baseValue = currentFrequency
+            
+        case .modulatingMultiplier:
+            baseValue = Double(oscLeft.modulatingMultiplier)
+            
+        case .stereoSpreadAmount:
+            baseValue = detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
+            
+        case .voiceLFOFrequency, .voiceLFOAmount:
+            // Meta-modulation: global LFO modulating voice LFO
+            // Skip for now to avoid complexity
+            return
+            
+        case .delayTime, .delayMix:
+            // These are handled by VoicePool, not per-voice
+            return
+        }
+        
+        // Apply LFO modulation
+        let modulated = ModulationRouter.applyLFOModulation(
+            baseValue: baseValue,
+            lfoValue: value,
+            destination: destination
+        )
+        
+        // Set the modulated parameter
+        switch destination {
+        case .modulationIndex:
+            oscLeft.modulationIndex = AUValue(modulated)
+            oscRight.modulationIndex = AUValue(modulated)
+            
+        case .filterCutoff:
+            filter.cutoffFrequency = AUValue(modulated)
+            
+        case .oscillatorAmplitude:
+            oscLeft.amplitude = AUValue(modulated)
+            oscRight.amplitude = AUValue(modulated)
+            
+        case .oscillatorBaseFrequency:
+            // Update frequency with modulation
+            currentFrequency = modulated
+            updateOscillatorFrequencies()
+            
+        case .modulatingMultiplier:
+            oscLeft.modulatingMultiplier = AUValue(modulated)
+            oscRight.modulatingMultiplier = AUValue(modulated)
+            
+        case .stereoSpreadAmount:
+            if detuneMode == .proportional {
+                frequencyOffsetRatio = modulated
+            } else {
+                frequencyOffsetHz = modulated
+            }
+            
+        case .voiceLFOFrequency, .voiceLFOAmount, .delayTime, .delayMix:
+            break  // Already handled above
         }
     }
 }
