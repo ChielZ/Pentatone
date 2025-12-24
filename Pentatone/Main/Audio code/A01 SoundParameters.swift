@@ -49,10 +49,10 @@ struct OscillatorParameters: Codable, Equatable {
     
     static let `default` = OscillatorParameters(
         carrierMultiplier: 1.0,
-        modulatingMultiplier: 2.07,
-        modulationIndex: 0.0,
+        modulatingMultiplier: 2.00,
+        modulationIndex: 1.0,
         amplitude: 0.5,
-        waveform: .sine
+        waveform: .triangle
     )
 }
 
@@ -63,7 +63,7 @@ struct FilterParameters: Codable, Equatable {
     var saturation: Double
     
     static let `default` = FilterParameters(
-        cutoffFrequency: 12000,
+        cutoffFrequency: 1200,
         resonance: 1.5,
         saturation: 0.0
     )
@@ -95,7 +95,7 @@ struct EnvelopeParameters: Codable, Equatable {
         attackDuration: 0.01,
         decayDuration: 0.2,
         sustainLevel: 1.0,
-        releaseDuration: 1.2
+        releaseDuration: 0.2
     )
 }
 
@@ -110,7 +110,38 @@ struct VoiceParameters: Codable, Equatable {
         oscillator: .default,
         filter: .default,
         envelope: .default,
-        modulation: .default
+        modulation: VoiceModulationParameters(
+            modulatorEnvelope: ModulationEnvelopeParameters(
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.3,
+                release: 0.1,
+                destination: .modulationIndex,
+                amount: 0.0,
+                isEnabled: false
+            ),
+            auxiliaryEnvelope: ModulationEnvelopeParameters(
+                attack: 0.1,
+                decay: 0.2,
+                sustain: 0.5,
+                release: 0.3,
+                destination: .filterCutoff,
+                amount: 0.0,
+                isEnabled: false
+            ),
+            voiceLFO: LFOParameters(
+                waveform: .square,
+                resetMode: .free,
+                frequencyMode: .hertz,
+                frequency: 6.0,              // 3 Hz wobble
+                destination: .oscillatorAmplitude,  // ← CHANGE THIS to test different destinations
+                amount: 1.0,                 // ← CHANGE THIS (0.0 = off, 1.0 = max)
+                isEnabled: true              // ← SET TO false TO DISABLE
+            ),
+            keyTracking: .default,
+            touchInitial: .default,
+            touchAftertouch: .default
+        )
     )
 }
 
@@ -152,7 +183,15 @@ struct MasterParameters: Codable, Equatable {
     static let `default` = MasterParameters(
         delay: .default,
         reverb: .default,
-        globalLFO: .default,
+        globalLFO: GlobalLFOParameters(
+            waveform: .square,
+            resetMode: .free,
+            frequencyMode: .hertz,
+            frequency: 5.5,                    // 1.5 Hz slow wobble
+            destination: .oscillatorAmplitude, // ← CHANGE THIS to test different destinations
+            amount: 0.0,                       // ← CHANGE THIS (0.0 = off, 1.0 = max)
+            isEnabled: true                    // ← SET TO false TO DISABLE
+        ),
         tempo: 120.0
     )
 }

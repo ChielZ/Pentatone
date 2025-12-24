@@ -59,9 +59,16 @@ enum EngineManager {
         
         // Get default parameters from parameter manager
         let masterParams = MasterParameters.default
+        let voiceParams = VoiceParameters.default
         
         // Create voice pool (5 polyphonic voices)
         voicePool = VoicePool(voiceCount: 5)
+        
+        // Apply global LFO parameters from master defaults
+        voicePool.updateGlobalLFO(masterParams.globalLFO)
+        
+        // Apply voice modulation parameters to all voices
+        voicePool.updateAllVoiceModulation(voiceParams.modulation)
         
         // Delay processes the voice pool output - initialized with parameters
         fxDelay = StereoDelay(

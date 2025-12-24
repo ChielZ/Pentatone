@@ -89,7 +89,7 @@ final class PolyphonicVoice {
     /// 1.0 = no offset (both oscillators at same frequency)
     /// 1.01 = ±17 cents (34 cents total spread)
     /// Left oscillator multiplies by this value, right divides by it
-    var frequencyOffsetRatio: Double = 1.004 {
+    var frequencyOffsetRatio: Double = 1.000 {
         didSet {
             if isInitialized && detuneMode == .proportional {
                 updateOscillatorFrequencies()
@@ -102,7 +102,7 @@ final class PolyphonicVoice {
     /// 2 Hz = 4 Hz beat rate (2 Hz each side)
     /// 5 Hz = 10 Hz beat rate (5 Hz each side)
     /// Left oscillator adds this value, right subtracts it
-    var frequencyOffsetHz: Double = 1.5 {
+    var frequencyOffsetHz: Double = 0.0 {
         didSet {
             if isInitialized && detuneMode == .constant {
                 updateOscillatorFrequencies()
@@ -371,6 +371,12 @@ final class PolyphonicVoice {
         deltaTime: Double,
         currentTempo: Double = 120.0
     ) {
+        // FIRST: Apply base values from touch control (always, even if no modulation)
+        // This ensures touch gestures update smoothly at 200 Hz
+        oscLeft.amplitude = AUValue(modulationState.baseAmplitude)
+        oscRight.amplitude = AUValue(modulationState.baseAmplitude)
+        filter.cutoffFrequency = AUValue(modulationState.baseFilterCutoff)
+        
         // Update envelope times
         modulationState.modulatorEnvelopeTime += deltaTime
         modulationState.auxiliaryEnvelopeTime += deltaTime

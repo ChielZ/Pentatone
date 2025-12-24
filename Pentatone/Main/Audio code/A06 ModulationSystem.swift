@@ -468,7 +468,7 @@ struct ModulationState {
     // User-controlled base values (before modulation)
     // These are set by touch gestures and used as the base for modulation
     var baseAmplitude: Double = 0.5        // User's desired amplitude (0.0 - 1.0)
-    var baseFilterCutoff: Double = 1000.0  // User's desired filter cutoff (Hz)
+    var baseFilterCutoff: Double = 1200.0  // User's desired filter cutoff (Hz)
     
     /// Reset state when voice is triggered
     /// - Parameters:
