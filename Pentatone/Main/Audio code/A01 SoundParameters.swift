@@ -49,10 +49,10 @@ struct OscillatorParameters: Codable, Equatable {
     
     static let `default` = OscillatorParameters(
         carrierMultiplier: 1.0,
-        modulatingMultiplier: 2.0,
-        modulationIndex: 0.95,
+        modulatingMultiplier: 2.07,
+        modulationIndex: 0.0,
         amplitude: 0.5,
-        waveform: .triangle
+        waveform: .sine
     )
 }
 
@@ -63,7 +63,7 @@ struct FilterParameters: Codable, Equatable {
     var saturation: Double
     
     static let `default` = FilterParameters(
-        cutoffFrequency: 1200,
+        cutoffFrequency: 12000,
         resonance: 1.5,
         saturation: 0.0
     )
@@ -94,8 +94,8 @@ struct EnvelopeParameters: Codable, Equatable {
     static let `default` = EnvelopeParameters(
         attackDuration: 0.01,
         decayDuration: 0.2,
-        sustainLevel: 0.7,
-        releaseDuration: 0.2
+        sustainLevel: 1.0,
+        releaseDuration: 1.2
     )
 }
 
@@ -124,7 +124,7 @@ struct DelayParameters: Codable, Equatable {
     static let `default` = DelayParameters(
         time: 0.5,
         feedback: 0.2,
-        dryWetMix: 0.5,
+        dryWetMix: 0.0,
         pingPong: true
     )
 }

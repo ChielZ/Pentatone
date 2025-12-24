@@ -336,23 +336,39 @@ final class PolyphonicVoice {
         modulationState.auxiliaryEnvelopeTime += deltaTime
         
         // Calculate envelope values
-        let modulatorValue = voiceModulation.modulatorEnvelope.currentValue(
-            timeInEnvelope: modulationState.modulatorEnvelopeTime,
-            isGateOpen: modulationState.isGateOpen
-        )
+        let modulatorValue: Double
+        let auxiliaryValue: Double
         
-        let auxiliaryValue = voiceModulation.auxiliaryEnvelope.currentValue(
-            timeInEnvelope: modulationState.auxiliaryEnvelopeTime,
-            isGateOpen: modulationState.isGateOpen
-        )
+        if modulationState.isGateOpen {
+            // Gate open: use normal envelope calculation
+            modulatorValue = voiceModulation.modulatorEnvelope.currentValue(
+                timeInEnvelope: modulationState.modulatorEnvelopeTime,
+                isGateOpen: true
+            )
+            
+            auxiliaryValue = voiceModulation.auxiliaryEnvelope.currentValue(
+                timeInEnvelope: modulationState.auxiliaryEnvelopeTime,
+                isGateOpen: true
+            )
+        } else {
+            // Gate closed: use release calculation from captured level
+            modulatorValue = voiceModulation.modulatorEnvelope.releaseValue(
+                timeInRelease: modulationState.modulatorEnvelopeTime,
+                fromLevel: modulationState.modulatorSustainLevel
+            )
+            
+            auxiliaryValue = voiceModulation.auxiliaryEnvelope.releaseValue(
+                timeInRelease: modulationState.auxiliaryEnvelopeTime,
+                fromLevel: modulationState.auxiliarySustainLevel
+            )
+        }
         
         // Apply modulator envelope to modulationIndex (hardwired)
         if voiceModulation.modulatorEnvelope.isEnabled {
-            let baseModIndex = voiceModulation.modulatorEnvelope.destination == .modulationIndex ? 
-                0.0 : oscLeft.modulationIndex  // Use 0 as base if hardwired, else current
+            let baseModIndex = 0.0  // Always start from 0 for modulator envelope
             
             let modulatedIndex = ModulationRouter.applyEnvelopeModulation(
-                baseValue: Double(baseModIndex),
+                baseValue: baseModIndex,
                 envelopeValue: modulatorValue,
                 amount: voiceModulation.modulatorEnvelope.amount,
                 destination: .modulationIndex

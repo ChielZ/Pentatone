@@ -195,14 +195,31 @@ struct ModulationEnvelopeParameters: Codable, Equatable {
         } else {
             // Gate is closed - process release stage
             // timeInEnvelope is time since gate closed
-            if timeInEnvelope < release {
-                // Release stage: linear fall from sustain to 0
-                let releaseProgress = timeInEnvelope / release
-                return sustain * (1.0 - releaseProgress)
-            } else {
-                // Release complete
-                return 0.0
-            }
+            // NOTE: We should release from the captured sustain level, not the configured one
+            // The captured level is passed via the ModulationState.modulatorSustainLevel
+            // This is handled in PolyphonicVoice.release() when closeGate is called
+            
+            // For now, return the sustain level as placeholder
+            // The actual release calculation will use the captured level
+            return sustain
+        }
+    }
+    
+    /// Calculate release value from a captured level
+    /// - Parameters:
+    ///   - timeInRelease: Time since gate closed
+    ///   - capturedLevel: The envelope level when gate closed
+    /// - Returns: Current envelope value during release
+    func releaseValue(timeInRelease: Double, fromLevel capturedLevel: Double) -> Double {
+        guard isEnabled else { return 0.0 }
+        
+        if timeInRelease < release {
+            // Release stage: linear fall from captured level to 0
+            let releaseProgress = timeInRelease / release
+            return capturedLevel * (1.0 - releaseProgress)
+        } else {
+            // Release complete
+            return 0.0
         }
     }
     

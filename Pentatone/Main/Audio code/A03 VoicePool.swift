@@ -44,11 +44,8 @@ final class VoicePool {
     
     // MARK: - Global Modulation (Phase 5)
     
-    /// Global LFO parameters affecting all voices or global parameters
+    /// Global LFO affecting all voices (will be implemented in Phase 5)
     var globalLFO: GlobalLFOParameters = .default
-    
-    /// Global modulation runtime state (phase tracking, tempo)
-    var globalModulationState = GlobalModulationState()
     
     // MARK: - Initialization
     
@@ -252,7 +249,7 @@ final class VoicePool {
     // MARK: - Modulation (Phase 5)
     
     /// Control-rate timer for modulation updates (Phase 5B+)
-    private var modulationTimer: Timer?
+    private var modulationTimer: DispatchSourceTimer?
     
     /// Updates global LFO parameters
     func updateGlobalLFO(_ parameters: GlobalLFOParameters) {
@@ -274,25 +271,32 @@ final class VoicePool {
             return
         }
         
-        modulationTimer = Timer.scheduledTimer(
-            withTimeInterval: ControlRateConfig.updateInterval,
-            repeats: true
-        ) { [weak self] _ in
+        // Create a dispatch timer on a background queue
+        let queue = DispatchQueue(label: "com.pentatone.modulation", qos: .userInteractive)
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        
+        // Set to fire every 5ms (200 Hz)
+        timer.schedule(deadline: .now(), repeating: ControlRateConfig.updateInterval)
+        
+        timer.setEventHandler { [weak self] in
             self?.updateModulation()
         }
+        
+        timer.resume()
+        modulationTimer = timer
         
         print("🎵 Modulation system started at \(ControlRateConfig.updateRate) Hz")
     }
     
     /// Stops the modulation update loop
     func stopModulation() {
-        modulationTimer?.invalidate()
+        modulationTimer?.cancel()
         modulationTimer = nil
         print("🎵 Modulation system stopped")
     }
     
     /// Updates modulation for all active voices (Phase 5B)
-    /// Called by control-rate timer at 200 Hz
+    /// Called by control-rate timer at 200 Hz on background thread
     private func updateModulation() {
         let deltaTime = ControlRateConfig.updateInterval
         
@@ -300,6 +304,7 @@ final class VoicePool {
         let globalLFOValue = 0.0  // Placeholder for Phase 5C
         
         // Update all active voices
+        // Note: This runs on background thread, AudioKit parameter updates are thread-safe
         for voice in voices where !voice.isAvailable {
             voice.applyModulation(globalLFOValue: globalLFOValue, deltaTime: deltaTime)
         }

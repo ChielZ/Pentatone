@@ -20,10 +20,10 @@ enum EnvelopeTestPresets {
         
         // Modulator envelope → modulationIndex (hardwired)
         params.modulatorEnvelope = ModulationEnvelopeParameters(
-            attack: 0.001,       // Instant bright attack
-            decay: 0.3,          // Fast decay
-            sustain: 0.1,        // Low sustain (mellow)
-            release: 0.5,        // Medium release
+            attack: 1.5,       // Instant bright attack
+            decay: 2.3,          // Fast decay
+            sustain: 0.0,        // Low sustain (mellow)
+            release: 1.5,        // Medium release
             destination: .modulationIndex,
             amount: 8.0,         // Strong modulation (0 to 8)
             isEnabled: true
@@ -103,7 +103,7 @@ enum EnvelopeTestPresets {
             attack: 0.01,        // Instant start high
             decay: 0.5,          // Drop over 500ms
             sustain: 0.0,        // End at base pitch
-            release: 0.2,
+            release: 1.2,
             destination: .oscillatorBaseFrequency,
             amount: 0.5,         // +6 semitones (half octave)
             isEnabled: true
