@@ -224,13 +224,6 @@ private struct KeyButton: View {
     // Store allocated voice
     @State private var allocatedVoice: PolyphonicVoice? = nil
     
-    // Track last smoothed cutoff for aftertouch
-    @State private var lastSmoothedCutoff: Double? = nil
-    
-    // Minimum movement threshold - removed for smooth modulation
-    // The modulation system will handle updates at 200Hz
-    // private let movementThreshold: CGFloat = 1.0
-    
     var body: some View {
         GeometryReader { geometry in
             RoundedRectangle(cornerRadius: radius)
@@ -292,21 +285,10 @@ private struct KeyButton: View {
         // Normalize touch position to 0...1
         let normalized = max(0.0, min(1.0, touchX / viewWidth))
         
-        // ALWAYS update modulation state with touch position
-        // This allows the touch modulation system to route it to any destination
+        // Update modulation state with touch position
+        // The routable modulation system will handle routing to configured destinations
         voice.modulationState.initialTouchX = normalized
         voice.modulationState.currentTouchX = normalized
-        
-        // OLD HARDWIRED CONTROL (DISABLED FOR TESTING)
-        // Set neutral base values - the routable modulation system will handle touch
-        voice.setAmplitudeFromTouch(0.0)  // Neutral base (modulation will add touch value)
-        
-        // Reset filter to template default
-        let templateCutoff = AudioParameterManager.shared.voiceTemplate.filter.cutoffFrequency
-        voice.setFilterCutoffFromTouch(templateCutoff)
-        
-        // Clear smoothing state (start fresh for new note)
-        lastSmoothedCutoff = nil
         
         print("🎹 Key \(keyIndex): Allocated voice, freq \(String(format: "%.2f", frequency)) Hz, touchX \(String(format: "%.2f", normalized))")
     }
@@ -314,15 +296,10 @@ private struct KeyButton: View {
     private func handleAftertouch(initialX: CGFloat, currentX: CGFloat, viewWidth: CGFloat) {
         guard let voice = allocatedVoice else { return }
         
-        // ALWAYS update the current touch X position in modulation state
-        // This allows the modulation system to route it to any destination
+        // Update the current touch X position in modulation state
+        // The routable modulation system will handle routing to configured destinations
         let normalizedCurrentX = max(0.0, min(1.0, currentX / viewWidth))
         voice.modulationState.currentTouchX = normalizedCurrentX
-        
-        // OLD HARDWIRED AFTERTOUCH CONTROL (DISABLED FOR TESTING)
-        // The routable modulation system will handle aftertouch
-        // Note: The old system had logarithmic scaling and smoothing
-        // The new system uses raw delta values, which may feel different
     }
     
     private func handleRelease() {
@@ -331,9 +308,6 @@ private struct KeyButton: View {
         // Release voice back to pool
         voicePool.releaseVoice(forKey: keyIndex)
         allocatedVoice = nil
-        
-        // Clear smoothing state
-        lastSmoothedCutoff = nil
         
         print("🎹 Key \(keyIndex): Released voice")
     }

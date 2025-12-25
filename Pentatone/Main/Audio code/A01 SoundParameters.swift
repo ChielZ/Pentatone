@@ -140,14 +140,14 @@ struct VoiceParameters: Codable, Equatable {
             ),
             keyTracking: .default,
             touchInitial: TouchInitialParameters(
-                destination: .oscillatorAmplitude,   // Touch X controls amplitude (like old system)
+                destination: .oscillatorAmplitude,   // Touch X controls amplitude
                 amount: 1.0,                         // Full range (0.0 to 1.0)
-                isEnabled: true                      // ✅ ENABLED FOR TESTING
+                isEnabled: true                      // Standard touch control
             ),
             touchAftertouch: TouchAftertouchParameters(
-                destination: .filterCutoff,          // Aftertouch controls filter (like old system)
-                amount: 5.0,                        // High sensitivity to match old system (~2.5 octaves/100 points)
-                isEnabled: true                      // ✅ ENABLED FOR TESTING
+                destination: .filterCutoff,          // Aftertouch controls filter
+                amount: 5.0,                         // Moderate sensitivity
+                isEnabled: true                      // Standard aftertouch control
             )
         )
     )

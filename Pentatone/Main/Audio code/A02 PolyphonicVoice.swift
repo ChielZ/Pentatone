@@ -838,11 +838,6 @@ final class PolyphonicVoice {
         let currentX = modulationState.currentTouchX
         let aftertouchDelta = currentX - initialX  // Range: -1.0 to +1.0
         
-        // DEBUG: Print values to diagnose choppiness
-        if destination == .filterCutoff {
-            print("🎚️ Aftertouch: initialX=\(String(format: "%.3f", initialX)) currentX=\(String(format: "%.3f", currentX)) delta=\(String(format: "%.3f", aftertouchDelta))")
-        }
-        
         // Scale the delta by the amount parameter
         let scaledValue = aftertouchDelta * params.amount
         
@@ -869,9 +864,6 @@ final class PolyphonicVoice {
             
             // Store for next iteration
             modulationState.lastSmoothedFilterCutoff = finalValue
-            
-            // DEBUG: Print smoothing
-            print("   target=\(String(format: "%.1f", targetValue)) smoothed=\(String(format: "%.1f", finalValue))")
         } else {
             // No smoothing for other destinations
             finalValue = targetValue
@@ -956,23 +948,28 @@ final class PolyphonicVoice {
         
         switch destination {
         case .modulationIndex:
-            oscLeft.modulationIndex = AUValue(value)
-            oscRight.modulationIndex = AUValue(value)
+            let clamped = max(0.0, min(10.0, value))
+            oscLeft.modulationIndex = AUValue(clamped)
+            oscRight.modulationIndex = AUValue(clamped)
             
         case .filterCutoff:
-            filter.cutoffFrequency = AUValue(value)
+            // Clamp to safe range for AudioKit (20 Hz - 20 kHz)
+            let clamped = max(20.0, min(20000.0, value))
+            filter.cutoffFrequency = AUValue(clamped)
             
         case .oscillatorAmplitude:
-            oscLeft.amplitude = AUValue(value)
-            oscRight.amplitude = AUValue(value)
+            let clamped = max(0.0, min(1.0, value))
+            oscLeft.amplitude = AUValue(clamped)
+            oscRight.amplitude = AUValue(clamped)
             
         case .oscillatorBaseFrequency:
             currentFrequency = value
             updateOscillatorFrequencies()
             
         case .modulatingMultiplier:
-            oscLeft.modulatingMultiplier = AUValue(value)
-            oscRight.modulatingMultiplier = AUValue(value)
+            let clamped = max(0.1, min(20.0, value))
+            oscLeft.modulatingMultiplier = AUValue(clamped)
+            oscRight.modulatingMultiplier = AUValue(clamped)
             
         case .stereoSpreadAmount:
             if detuneMode == .proportional {
@@ -983,11 +980,11 @@ final class PolyphonicVoice {
             
         case .voiceLFOFrequency:
             // Modulate the voice LFO frequency
-            voiceModulation.voiceLFO.frequency = value
+            voiceModulation.voiceLFO.frequency = max(0.01, min(10.0, value))
             
         case .voiceLFOAmount:
             // Modulate the voice LFO amount
-            voiceModulation.voiceLFO.amount = value
+            voiceModulation.voiceLFO.amount = max(0.0, min(1.0, value))
             
         case .delayTime, .delayMix:
             // These are global-level, handled elsewhere
