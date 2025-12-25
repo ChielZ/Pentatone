@@ -77,7 +77,7 @@ final class PolyphonicVoice {
     // MARK: - Parameters
     
     /// Detune mode determines how stereo spread is calculated
-    var detuneMode: DetuneMode = .constant {
+    var detuneMode: DetuneMode = .proportional {
         didSet {
             if isInitialized {
                 updateOscillatorFrequencies()
@@ -89,7 +89,7 @@ final class PolyphonicVoice {
     /// 1.0 = no offset (both oscillators at same frequency)
     /// 1.01 = ±17 cents (34 cents total spread)
     /// Left oscillator multiplies by this value, right divides by it
-    var frequencyOffsetRatio: Double = 1.000 {
+    var frequencyOffsetRatio: Double = 1.003 {
         didSet {
             if isInitialized && detuneMode == .proportional {
                 updateOscillatorFrequencies()

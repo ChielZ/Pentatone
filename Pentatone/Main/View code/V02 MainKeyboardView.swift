@@ -57,7 +57,7 @@ struct MainKeyboardView: View {
     /// Keyboard state providing frequency calculations
     var keyboardState: KeyboardState
     
-    @State private var showingOptions: Bool = true
+    @State private var showingOptions: Bool = false
     
     // MARK: - Key Color Calculation
     
