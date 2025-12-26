@@ -241,12 +241,6 @@ final class VoicePool {
         }
     }
     
-    /// DEPRECATED: Use updateFrequencyOffsetRatio instead
-    @available(*, deprecated, renamed: "updateFrequencyOffsetRatio")
-    func updateFrequencyOffset(_ offset: Double) {
-        updateFrequencyOffsetRatio(offset)
-    }
-    
     // MARK: - Modulation (Phase 5)
     
     /// Control-rate timer for modulation updates (Phase 5B+)

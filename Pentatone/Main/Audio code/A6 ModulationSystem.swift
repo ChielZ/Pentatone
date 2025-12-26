@@ -84,6 +84,46 @@ enum LFOWaveform: String, Codable, CaseIterable {
         case .reverseSawtooth: return "Reverse Saw"
         }
     }
+    
+    /// Calculate the waveform value at a given phase
+    /// - Parameter phase: Current phase of the LFO (0.0 = start, 1.0 = end of cycle)
+    /// - Returns: Raw waveform value in range -1.0 to +1.0 (bipolar, unscaled)
+    func value(at phase: Double) -> Double {
+        // Normalize phase to 0-1 range (handle wraparound)
+        let normalizedPhase = phase - floor(phase)
+        
+        switch self {
+        case .sine:
+            // Sine wave: smooth oscillation
+            return sin(normalizedPhase * 2.0 * .pi)
+            
+        case .triangle:
+            // Triangle wave: linear rise and fall
+            // 0.0-0.5: rise from -1 to +1
+            // 0.5-1.0: fall from +1 to -1
+            if normalizedPhase < 0.5 {
+                return (normalizedPhase * 4.0) - 1.0  // -1 to +1
+            } else {
+                return 3.0 - (normalizedPhase * 4.0)  // +1 to -1
+            }
+            
+        case .square:
+            // Square wave: instant transitions
+            // 0.0-0.5: +1
+            // 0.5-1.0: -1
+            return normalizedPhase < 0.5 ? 1.0 : -1.0
+            
+        case .sawtooth:
+            // Sawtooth wave: linear rise, instant drop
+            // 0.0-1.0: -1 to +1 (then instant drop to -1)
+            return (normalizedPhase * 2.0) - 1.0
+            
+        case .reverseSawtooth:
+            // Reverse sawtooth: instant rise, linear fall
+            // 0.0-1.0: +1 to -1 (instant rise from -1 to +1 at start)
+            return 1.0 - (normalizedPhase * 2.0)
+        }
+    }
 }
 
 // MARK: - LFO Reset Mode
@@ -143,46 +183,12 @@ struct LFOParameters: Codable, Equatable {
     
     /// Calculate the current LFO value based on phase (0.0 - 1.0)
     /// - Parameter phase: Current phase of the LFO (0.0 = start, 1.0 = end of cycle)
-    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar)
+    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar, scaled by amount)
     func currentValue(phase: Double) -> Double {
         guard isEnabled else { return 0.0 }
         
-        // Normalize phase to 0-1 range (handle wraparound)
-        let normalizedPhase = phase - floor(phase)
-        
-        let rawValue: Double
-        
-        switch waveform {
-        case .sine:
-            // Sine wave: smooth oscillation
-            rawValue = sin(normalizedPhase * 2.0 * .pi)
-            
-        case .triangle:
-            // Triangle wave: linear rise and fall
-            // 0.0-0.5: rise from -1 to +1
-            // 0.5-1.0: fall from +1 to -1
-            if normalizedPhase < 0.5 {
-                rawValue = (normalizedPhase * 4.0) - 1.0  // -1 to +1
-            } else {
-                rawValue = 3.0 - (normalizedPhase * 4.0)  // +1 to -1
-            }
-            
-        case .square:
-            // Square wave: instant transitions
-            // 0.0-0.5: +1
-            // 0.5-1.0: -1
-            rawValue = normalizedPhase < 0.5 ? 1.0 : -1.0
-            
-        case .sawtooth:
-            // Sawtooth wave: linear rise, instant drop
-            // 0.0-1.0: -1 to +1 (then instant drop to -1)
-            rawValue = (normalizedPhase * 2.0) - 1.0
-            
-        case .reverseSawtooth:
-            // Reverse sawtooth: instant rise, linear fall
-            // 0.0-1.0: +1 to -1 (instant rise from -1 to +1 at start)
-            rawValue = 1.0 - (normalizedPhase * 2.0)
-        }
+        // Get raw waveform value (-1.0 to +1.0) from the waveform enum
+        let rawValue = waveform.value(at: phase)
         
         // Scale by amount (bipolar modulation)
         return rawValue * amount
@@ -394,46 +400,12 @@ struct GlobalLFOParameters: Codable, Equatable {
     
     /// Calculate the current LFO value based on phase (0.0 - 1.0)
     /// - Parameter phase: Current phase of the LFO (0.0 = start, 1.0 = end of cycle)
-    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar)
+    /// - Returns: LFO value in range -1.0 to +1.0 (bipolar, scaled by amount)
     func currentValue(phase: Double) -> Double {
         guard isEnabled else { return 0.0 }
         
-        // Normalize phase to 0-1 range (handle wraparound)
-        let normalizedPhase = phase - floor(phase)
-        
-        let rawValue: Double
-        
-        switch waveform {
-        case .sine:
-            // Sine wave: smooth oscillation
-            rawValue = sin(normalizedPhase * 2.0 * .pi)
-            
-        case .triangle:
-            // Triangle wave: linear rise and fall
-            // 0.0-0.5: rise from -1 to +1
-            // 0.5-1.0: fall from +1 to -1
-            if normalizedPhase < 0.5 {
-                rawValue = (normalizedPhase * 4.0) - 1.0  // -1 to +1
-            } else {
-                rawValue = 3.0 - (normalizedPhase * 4.0)  // +1 to -1
-            }
-            
-        case .square:
-            // Square wave: instant transitions
-            // 0.0-0.5: +1
-            // 0.5-1.0: -1
-            rawValue = normalizedPhase < 0.5 ? 1.0 : -1.0
-            
-        case .sawtooth:
-            // Sawtooth wave: linear rise, instant drop
-            // 0.0-1.0: -1 to +1 (then instant drop to -1)
-            rawValue = (normalizedPhase * 2.0) - 1.0
-            
-        case .reverseSawtooth:
-            // Reverse sawtooth: instant rise, linear fall
-            // 0.0-1.0: +1 to -1 (instant rise from -1 to +1 at start)
-            rawValue = 1.0 - (normalizedPhase * 2.0)
-        }
+        // Get raw waveform value (-1.0 to +1.0) from the waveform enum
+        let rawValue = waveform.value(at: phase)
         
         // Scale by amount (bipolar modulation)
         return rawValue * amount

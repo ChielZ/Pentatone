@@ -134,9 +134,9 @@ struct VoiceParameters: Codable, Equatable {
                 resetMode: .free,
                 frequencyMode: .hertz,
                 frequency: 6.0,
-                destination: .oscillatorAmplitude,
-                amount: 0.0,                         // Disabled by default
-                isEnabled: false
+                destination: .oscillatorBaseFrequency,
+                amount: 0.1,                         // Disabled by default
+                isEnabled: true
             ),
             keyTracking: .default,
             touchInitial: TouchInitialParameters(
@@ -192,10 +192,10 @@ struct MasterParameters: Codable, Equatable {
         delay: .default,
         reverb: .default,
         globalLFO: GlobalLFOParameters(
-            waveform: .square,
+            waveform: .sine,
             resetMode: .free,
             frequencyMode: .hertz,
-            frequency: 5.5,                    // 1.5 Hz slow wobble
+            frequency: 5.0,                    // 1.5 Hz slow wobble
             destination: .oscillatorAmplitude, // ← CHANGE THIS to test different destinations
             amount: 0.0,                       // ← CHANGE THIS (0.0 = off, 1.0 = max)
             isEnabled: true                    // ← SET TO false TO DISABLE

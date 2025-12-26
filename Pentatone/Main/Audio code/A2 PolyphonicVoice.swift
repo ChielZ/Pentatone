@@ -110,13 +110,6 @@ final class PolyphonicVoice {
         }
     }
     
-    // DEPRECATED: Use frequencyOffsetRatio or frequencyOffsetHz depending on mode
-    @available(*, deprecated, renamed: "frequencyOffsetRatio")
-    var frequencyOffset: Double {
-        get { frequencyOffsetRatio }
-        set { frequencyOffsetRatio = newValue }
-    }
-    
     // MARK: - Modulation (Phase 5 - placeholder)
     
     /// Modulation parameters for this voice (Phase 5)
@@ -124,13 +117,6 @@ final class PolyphonicVoice {
     
     /// Modulation runtime state (Phase 5)
     var modulationState: ModulationState = ModulationState()
-    
-    // DEPRECATED: Use voiceModulation.voiceLFO
-    @available(*, deprecated, renamed: "voiceModulation")
-    var voiceLFO: LFOParameters {
-        get { voiceModulation.voiceLFO }
-        set { voiceModulation.voiceLFO = newValue }
-    }
     
     // MARK: - Initialization
     
