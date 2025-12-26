@@ -249,6 +249,13 @@ final class PolyphonicVoice {
             return
         }
         
+        // IMMEDIATE FIX: Apply base values directly at trigger time (audio rate)
+        // This bypasses the modulation timer delay for instant response
+        // The modulation system will take over on the next control-rate update
+        oscLeft.amplitude = AUValue(modulationState.baseAmplitude)
+        oscRight.amplitude = AUValue(modulationState.baseAmplitude)
+        filter.cutoffFrequency = AUValue(modulationState.baseFilterCutoff)
+        
         envelope.reset()
         envelope.openGate()
         isAvailable = false
