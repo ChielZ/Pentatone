@@ -42,18 +42,39 @@ enum OscillatorWaveform: String, Codable, Equatable, CaseIterable {
 /// Parameters for the FM oscillator
 struct OscillatorParameters: Codable, Equatable {
     var carrierMultiplier: Double
-    var modulatingMultiplier: Double
+    var modulatingMultiplier: Double          // Combined coarse + fine (e.g., 2.50 = coarse:2, fine:0.50)
     var modulationIndex: Double
     var amplitude: Double
     var waveform: OscillatorWaveform
+    var detuneMode: DetuneMode                // How stereo spread is calculated
+    var stereoOffsetProportional: Double      // For proportional mode (ratio, e.g., 1.003)
+    var stereoOffsetConstant: Double          // For constant mode (Hz, e.g., 2.0)
     
     static let `default` = OscillatorParameters(
         carrierMultiplier: 1.0,
         modulatingMultiplier: 2.00,
         modulationIndex: 1.0,
         amplitude: 0.5,
-        waveform: .triangle
+        waveform: .triangle,
+        detuneMode: .proportional,
+        stereoOffsetProportional: 1.003,
+        stereoOffsetConstant: 2.0
     )
+    
+    /// Helper: Get the coarse part of modulatingMultiplier (integer part)
+    var modulatingMultiplierCoarse: Int {
+        Int(floor(modulatingMultiplier))
+    }
+    
+    /// Helper: Get the fine part of modulatingMultiplier (fractional part)
+    var modulatingMultiplierFine: Double {
+        modulatingMultiplier - floor(modulatingMultiplier)
+    }
+    
+    /// Helper: Set modulatingMultiplier from separate coarse and fine values
+    mutating func setModulatingMultiplier(coarse: Int, fine: Double) {
+        modulatingMultiplier = Double(coarse) + fine
+    }
 }
 
 /// Parameters for the low-pass filter
@@ -135,18 +156,18 @@ struct VoiceParameters: Codable, Equatable {
                 frequencyMode: .hertz,
                 frequency: 6.0,
                 destination: .oscillatorAmplitude,
-                amount: 0.5,                         // Disabled by default
+                amount: 0.0,                         // Disabled by default
                 isEnabled: true
             ),
             keyTracking: .default,
             touchInitial: TouchInitialParameters(
                 destination: .oscillatorAmplitude,   // Touch X controls amplitude
-                amount: 1.0,                         // Full range (0.0 to 1.0)
+                amount: 0.0,                         // Full range (0.0 to 1.0)
                 isEnabled: true                      // Standard touch control
             ),
             touchAftertouch: TouchAftertouchParameters(
                 destination: .filterCutoff,          // Aftertouch controls filter
-                amount: 5.0,                         // Moderate sensitivity
+                amount: 0.0,                         // Moderate sensitivity
                 isEnabled: true                      // Standard aftertouch control
             )
         )
@@ -163,7 +184,7 @@ struct DelayParameters: Codable, Equatable {
     static let `default` = DelayParameters(
         time: 0.5,
         feedback: 0.2,
-        dryWetMix: 0.5,
+        dryWetMix: 0.0,
         pingPong: true
     )
 }
@@ -303,6 +324,43 @@ final class AudioParameterManager: ObservableObject {
     
     func updateTemplateEnvelope(_ parameters: EnvelopeParameters) {
         voiceTemplate.envelope = parameters
+    }
+    
+    // MARK: - Individual Oscillator Parameter Updates
+    
+    /// Update oscillator waveform
+    func updateOscillatorWaveform(_ waveform: OscillatorWaveform) {
+        voiceTemplate.oscillator.waveform = waveform
+    }
+    
+    /// Update carrier multiplier
+    func updateCarrierMultiplier(_ value: Double) {
+        voiceTemplate.oscillator.carrierMultiplier = value
+    }
+    
+    /// Update modulating multiplier
+    func updateModulatingMultiplier(_ value: Double) {
+        voiceTemplate.oscillator.modulatingMultiplier = value
+    }
+    
+    /// Update modulation index (base level)
+    func updateModulationIndex(_ value: Double) {
+        voiceTemplate.oscillator.modulationIndex = value
+    }
+    
+    /// Update detune mode
+    func updateDetuneMode(_ mode: DetuneMode) {
+        voiceTemplate.oscillator.detuneMode = mode
+    }
+    
+    /// Update stereo offset (proportional)
+    func updateStereoOffsetProportional(_ value: Double) {
+        voiceTemplate.oscillator.stereoOffsetProportional = value
+    }
+    
+    /// Update stereo offset (constant)
+    func updateStereoOffsetConstant(_ value: Double) {
+        voiceTemplate.oscillator.stereoOffsetConstant = value
     }
     
     // MARK: - Preset Management

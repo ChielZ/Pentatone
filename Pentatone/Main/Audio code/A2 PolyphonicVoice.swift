@@ -14,7 +14,7 @@ import DunneAudioKit
 // MARK: - Detune Mode
 
 /// Defines how stereo spread is calculated
-enum DetuneMode: String, CaseIterable {
+enum DetuneMode: String, CaseIterable, Codable {
     case proportional  // Constant cents (natural, more beating at higher pitches)
     case constant      // Constant Hz (uniform beating across all pitches)
     
