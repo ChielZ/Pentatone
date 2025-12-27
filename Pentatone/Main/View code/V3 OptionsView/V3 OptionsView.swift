@@ -54,7 +54,7 @@ enum OptionsSubView: CaseIterable {
 
 struct OptionsView: View {
     @Binding var showingOptions: Bool
-    @State private var currentSubView: OptionsSubView = .scale
+    @Binding var currentSubView: OptionsSubView
     
     // Scale navigation
     var currentScale: Scale = ScalesCatalog.centerMeridian_JI
@@ -64,6 +64,9 @@ struct OptionsView: View {
     var onCycleTerrestrial: ((Bool) -> Void)? = nil
     var onCycleRotation: ((Bool) -> Void)? = nil
     var onCycleKey: ((Bool) -> Void)? = nil
+    
+    // View switching
+    var onSwitchToEdit: (() -> Void)? = nil
 
     var body: some View {
         
@@ -156,7 +159,7 @@ struct OptionsView: View {
                     case .sound:
                         SoundView()
                     case .voice:
-                        VoiceView()
+                        VoiceView(onSwitchToEdit: onSwitchToEdit)
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -286,12 +289,14 @@ struct OptionsView: View {
 #Preview {
     OptionsView(
         showingOptions: .constant(true),
+        currentSubView: .constant(.scale),
         currentScale: ScalesCatalog.centerMeridian_JI,
         currentKey: .D,
         onCycleIntonation: { _ in },
         onCycleCelestial: { _ in },
         onCycleTerrestrial: { _ in },
         onCycleRotation: { _ in },
-        onCycleKey: { _ in }
+        onCycleKey: { _ in },
+        onSwitchToEdit: {}
     )
 }

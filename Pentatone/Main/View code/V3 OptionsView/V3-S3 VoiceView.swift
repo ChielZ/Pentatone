@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct VoiceView: View {
+    var onSwitchToEdit: (() -> Void)? = nil
+    
     var body: some View {
         Group {
             ZStack { // Row 3
@@ -52,6 +54,10 @@ struct VoiceView: View {
                         .foregroundColor(Color("KeyColour1"))
                         .adaptiveFont("Signpainter", size: 85)
                         .frame(width: geometry.size.width, height: geometry.size.height)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onSwitchToEdit?()
+                        }
                 }
             }
             ZStack { // Row 6

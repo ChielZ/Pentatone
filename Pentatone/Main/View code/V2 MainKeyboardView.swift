@@ -38,6 +38,12 @@ struct CenterStripConfig {
     }
 }
 
+/// Enum to track which main view is currently showing
+enum MainViewMode {
+    case options
+    case edit
+}
+
 struct MainKeyboardView: View {
     // Callbacks provided by the App to change scales
     var onPrevScale: (() -> Void)? = nil
@@ -58,6 +64,8 @@ struct MainKeyboardView: View {
     var keyboardState: KeyboardState
     
     @State private var showingOptions: Bool = false
+    @State private var currentMainView: MainViewMode = .options
+    @State private var currentOptionsSubView: OptionsSubView = .scale
     
     // MARK: - Key Color Calculation
     
@@ -103,35 +111,36 @@ struct MainKeyboardView: View {
                     }
                     .padding(5)
                     
-                    // Center column - Navigation strip or Options
+                    // Center column - Navigation strip or Options/Edit
                     ZStack {
                         if showingOptions {
-                            // Add border for iPad, no border for iPhone
-                            if centerConfig.isIPad {
+                            // Switch between OptionsView and EditView based on currentMainView
+                            switch currentMainView {
+                            case .options:
+                                OptionsView(
+                                    showingOptions: $showingOptions,
+                                    currentSubView: $currentOptionsSubView,
+                                    currentScale: currentScale,
+                                    currentKey: currentKey,
+                                    onCycleIntonation: onCycleIntonation,
+                                    onCycleCelestial: onCycleCelestial,
+                                    onCycleTerrestrial: onCycleTerrestrial,
+                                    onCycleRotation: onCycleRotation,
+                                    onCycleKey: onCycleKey,
+                                    onSwitchToEdit: {
+                                        currentMainView = .edit
+                                    }
+                                )
+                                .transition(.opacity)
                                 
-                                OptionsView(
+                            case .edit:
+                                EditView(
                                     showingOptions: $showingOptions,
-                                    currentScale: currentScale,
-                                    currentKey: currentKey,
-                                    onCycleIntonation: onCycleIntonation,
-                                    onCycleCelestial: onCycleCelestial,
-                                    onCycleTerrestrial: onCycleTerrestrial,
-                                    onCycleRotation: onCycleRotation,
-                                    onCycleKey: onCycleKey
+                                    onSwitchToOptions: {
+                                        currentMainView = .options
+                                    }
                                 )
-                                       .transition(.opacity)
-                            } else {
-                                OptionsView(
-                                    showingOptions: $showingOptions,
-                                    currentScale: currentScale,
-                                    currentKey: currentKey,
-                                    onCycleIntonation: onCycleIntonation,
-                                    onCycleCelestial: onCycleCelestial,
-                                    onCycleTerrestrial: onCycleTerrestrial,
-                                    onCycleRotation: onCycleRotation,
-                                    onCycleKey: onCycleKey
-                                )
-                                    .transition(.opacity)
+                                .transition(.opacity)
                             }
                         } else {
                             NavigationStrip(
@@ -145,6 +154,7 @@ struct MainKeyboardView: View {
                     }
                     .frame(width: centerConfig.width)
                     .animation(.easeInOut(duration: 0.3), value: showingOptions)
+                    .animation(.easeInOut(duration: 0.2), value: currentMainView)
                     
                     // Right column - Keys
                     VStack {

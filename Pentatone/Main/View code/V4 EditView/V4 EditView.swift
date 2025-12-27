@@ -29,6 +29,8 @@ struct EditView: View {
     @Binding var showingOptions: Bool
     @State private var currentSubView: EditSubView = .oscillators
     
+    // View switching
+    var onSwitchToOptions: (() -> Void)? = nil
 
     var body: some View {
         
@@ -129,6 +131,10 @@ struct EditView: View {
                             .foregroundColor(Color("KeyColour1"))
                             .adaptiveFont("Signpainter", size: 85)
                             .frame(width: geometry.size.width, height: geometry.size.height)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                onSwitchToOptions?()
+                            }
                     }
                 }
                 ZStack{ // Row 11
@@ -184,5 +190,6 @@ struct EditView: View {
 #Preview {
     EditView(
         showingOptions: .constant(true),
+        onSwitchToOptions: {}
      )
 }
