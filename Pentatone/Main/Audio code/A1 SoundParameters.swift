@@ -363,6 +363,45 @@ final class AudioParameterManager: ObservableObject {
         voiceTemplate.oscillator.stereoOffsetConstant = value
     }
     
+    // MARK: - Individual Envelope Parameter Updates
+    
+    /// Update envelope attack duration
+    func updateEnvelopeAttack(_ value: Double) {
+        voiceTemplate.envelope.attackDuration = value
+    }
+    
+    /// Update envelope decay duration
+    func updateEnvelopeDecay(_ value: Double) {
+        voiceTemplate.envelope.decayDuration = value
+    }
+    
+    /// Update envelope sustain level
+    func updateEnvelopeSustain(_ value: Double) {
+        voiceTemplate.envelope.sustainLevel = value
+    }
+    
+    /// Update envelope release duration
+    func updateEnvelopeRelease(_ value: Double) {
+        voiceTemplate.envelope.releaseDuration = value
+    }
+    
+    // MARK: - Individual Filter Parameter Updates
+    
+    /// Update filter cutoff frequency
+    func updateFilterCutoff(_ value: Double) {
+        voiceTemplate.filter.cutoffFrequency = value
+    }
+    
+    /// Update filter resonance
+    func updateFilterResonance(_ value: Double) {
+        voiceTemplate.filter.resonance = value
+    }
+    
+    /// Update filter saturation
+    func updateFilterSaturation(_ value: Double) {
+        voiceTemplate.filter.saturation = value
+    }
+    
     // MARK: - Preset Management
     
     /// Load a complete parameter set (preset)

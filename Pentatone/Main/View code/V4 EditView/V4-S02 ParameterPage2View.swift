@@ -17,53 +17,147 @@
  */
 
 import SwiftUI
+import AudioKit
+import AudioKitEX
+import SoundpipeAudioKit
 
 struct ContourView: View {
+    // Connect to the global parameter manager
+    @ObservedObject private var paramManager = AudioParameterManager.shared
+    
     var body: some View {
         Group {
-            ZStack { // Row 3
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("AMP ENVELOPE ATTACK")
-                        .foregroundColor(Color("HighlightColour"))
-            }
-            ZStack { // Row 4
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("AMP ENVELOPE DECAY")
-                        .foregroundColor(Color("HighlightColour"))
-            }
-            ZStack { // Row 6
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("AMP ENVELOPE SUSTAIN")
-                        .foregroundColor(Color("HighlightColour"))
-            }
-            ZStack { // Row 6
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("AMP ENVELOPE RELEASE")
-                        .foregroundColor(Color("HighlightColour"))
-            }
+            // Row 3 - Amp Envelope Attack (0-5 seconds)
+            SliderRow(
+                label: "AMP ENVELOPE ATTACK",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.envelope.attackDuration },
+                    set: { newValue in
+                        paramManager.updateEnvelopeAttack(newValue)
+                        applyEnvelopeToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f s", $0) }
+            )
             
-            ZStack { // Row 7
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("FILTER CUTOFF")
-                        .foregroundColor(Color("HighlightColour"))
-            }
-            ZStack { // Row 8
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("FILTER RESONANCE")
-                        .foregroundColor(Color("HighlightColour"))
-            }
-            ZStack { // Row 9
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("FILTER SATURATION")
-                        .foregroundColor(Color("HighlightColour"))
-            }
+            // Row 4 - Amp Envelope Decay (0-5 seconds)
+            SliderRow(
+                label: "AMP ENVELOPE DECAY",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.envelope.decayDuration },
+                    set: { newValue in
+                        paramManager.updateEnvelopeDecay(newValue)
+                        applyEnvelopeToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f s", $0) }
+            )
+            
+            // Row 5 - Amp Envelope Sustain (0-1)
+            SliderRow(
+                label: "AMP ENVELOPE SUSTAIN",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.envelope.sustainLevel },
+                    set: { newValue in
+                        paramManager.updateEnvelopeSustain(newValue)
+                        applyEnvelopeToAllVoices()
+                    }
+                ),
+                range: 0...1,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f", $0) }
+            )
+            
+            // Row 6 - Amp Envelope Release (0-5 seconds)
+            SliderRow(
+                label: "AMP ENVELOPE RELEASE",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.envelope.releaseDuration },
+                    set: { newValue in
+                        paramManager.updateEnvelopeRelease(newValue)
+                        applyEnvelopeToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f s", $0) }
+            )
+            
+            // Row 7 - Filter Cutoff (20-20000 Hz, logarithmic)
+            LogarithmicSliderRow(
+                label: "FILTER CUTOFF",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.filter.cutoffFrequency },
+                    set: { newValue in
+                        paramManager.updateFilterCutoff(newValue)
+                        applyFilterToAllVoices()
+                    }
+                ),
+                range: 20...20000,
+                displayFormatter: { value in
+                    if value < 1000 {
+                        return String(format: "%.0f Hz", value)
+                    } else {
+                        return String(format: "%.1f kHz", value / 1000)
+                    }
+                }
+            )
+            
+            // Row 8 - Filter Resonance (0-2)
+            SliderRow(
+                label: "FILTER RESONANCE",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.filter.resonance },
+                    set: { newValue in
+                        paramManager.updateFilterResonance(newValue)
+                        applyFilterToAllVoices()
+                    }
+                ),
+                range: 0...2,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f", $0) }
+            )
+            
+            // Row 9 - Filter Saturation (0-10)
+            SliderRow(
+                label: "FILTER SATURATION",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.filter.saturation },
+                    set: { newValue in
+                        paramManager.updateFilterSaturation(newValue)
+                        applyFilterToAllVoices()
+                    }
+                ),
+                range: 0...10,
+                step: 0.01,
+                displayFormatter: { String(format: "%.2f", $0) }
+            )
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Applies current envelope parameters to all active voices
+    private func applyEnvelopeToAllVoices() {
+        let params = paramManager.voiceTemplate.envelope
+        
+        // Apply to all voices in the pool
+        for voice in voicePool.voices {
+            voice.updateEnvelopeParameters(params)
+        }
+    }
+    
+    /// Applies current filter parameters to all active voices
+    private func applyFilterToAllVoices() {
+        let params = paramManager.voiceTemplate.filter
+        
+        // Apply to all voices in the pool
+        for voice in voicePool.voices {
+            voice.updateFilterParameters(params)
         }
     }
 }
@@ -71,7 +165,7 @@ struct ContourView: View {
 #Preview {
     ZStack {
         Color("BackgroundColour").ignoresSafeArea()
-        VStack {
+        VStack(spacing: 11) {
             ContourView()
         }
         .padding(25)
