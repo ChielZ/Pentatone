@@ -291,6 +291,12 @@ final class AudioParameterManager: ObservableObject {
         fxDelay?.feedback = AUValue(feedback)
     }
     
+    func updateDelayPingPong(_ pingPong: Bool) {
+        master.delay.pingPong = pingPong
+        // Note: PingPong mode may need to be handled in the audio engine setup
+        // depending on your delay implementation
+    }
+    
     func updateReverb(_ parameters: ReverbParameters) {
         master.reverb = parameters
         applyReverbParameters()
@@ -304,6 +310,15 @@ final class AudioParameterManager: ObservableObject {
     func updateReverbFeedback(_ feedback: Double) {
         master.reverb.feedback = feedback
         fxReverb?.feedback = AUValue(feedback)
+    }
+    
+    func updateReverbCutoff(_ cutoff: Double) {
+        master.reverb.cutoffFrequency = cutoff
+        fxReverb?.cutoffFrequency = AUValue(cutoff)
+    }
+    
+    func updateTempo(_ tempo: Double) {
+        master.tempo = tempo
     }
     
     // MARK: - Voice Template Updates
