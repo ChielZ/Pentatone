@@ -11,6 +11,9 @@ import AudioKitEX
 import SoundpipeAudioKit
 import DunneAudioKit
 
+/// actual polyphony
+var currentPolyphony = 5
+
 /// Manages allocation and lifecycle of polyphonic voices
 /// Uses round-robin allocation with availability checking and voice stealing
 final class VoicePool {
@@ -18,10 +21,12 @@ final class VoicePool {
     // MARK: - Configuration
     
     /// Minimum allowed polyphony
-    static let minPolyphony = 3
+    static let minPolyphony = 1
     
     /// Maximum allowed polyphony
     static let maxPolyphony = 12
+    
+
     
     /// Current voice count
     private(set) var voiceCount: Int
@@ -63,7 +68,7 @@ final class VoicePool {
     
     /// Creates a voice pool with the specified polyphony
     /// - Parameter voiceCount: Number of voices (clamped to min/max range)
-    init(voiceCount: Int = 5) {
+    init(voiceCount: Int = currentPolyphony) {
         // Clamp voice count to valid range
         self.voiceCount = min(max(voiceCount, Self.minPolyphony), Self.maxPolyphony)
         
@@ -236,7 +241,7 @@ final class VoicePool {
             
             // Create new voices with updated parameters
             var newVoices: [PolyphonicVoice] = []
-            for _ in 0..<self.voiceCount {
+            for _ in 0...currentPolyphony {
                 let voice = PolyphonicVoice(parameters: parameters)
                 newVoices.append(voice)
             }
