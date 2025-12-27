@@ -296,37 +296,7 @@ final class PolyphonicVoice {
         // Note: Waveform changes require recreation (not supported dynamically)
     }
     
-    // MARK: - Touch-Based Control (Phase 5C fix)
-    
-    /// Sets the amplitude from touch input
-    /// This updates the base amplitude in modulation state, which LFOs will modulate
-    /// - Parameter amplitude: The desired amplitude (0.0 - 1.0)
-    func setAmplitudeFromTouch(_ amplitude: Double) {
-        // Clamp to valid range
-        let clamped = max(0.0, min(1.0, amplitude))
-        
-        // Store as base value for modulation
-        modulationState.baseAmplitude = clamped
-        
-        // Apply directly to oscillators (will be overwritten by modulation if LFO is active)
-        oscLeft.amplitude = AUValue(clamped)
-        oscRight.amplitude = AUValue(clamped)
-    }
-    
-    /// Sets the filter cutoff from touch input
-    /// This updates the base cutoff in modulation state, which LFOs will modulate
-    /// - Parameter cutoff: The desired filter cutoff frequency in Hz
-    func setFilterCutoffFromTouch(_ cutoff: Double) {
-        // Clamp to valid range
-        let clamped = max(20.0, min(22050.0, cutoff))
-        
-        // Store as base value for modulation
-        modulationState.baseFilterCutoff = clamped
-        
-        // Apply directly to filter (will be overwritten by modulation if LFO is active)
-        filter.cutoffFrequency = AUValue(clamped)
-    }
-    
+   
     /// Updates filter parameters
     func updateFilterParameters(_ parameters: FilterParameters) {
         filter.cutoffFrequency = AUValue(parameters.clampedCutoff)
