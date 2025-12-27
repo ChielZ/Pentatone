@@ -521,91 +521,19 @@ final class PolyphonicVoice {
         // Only apply to voice-level destinations
         guard destination.isVoiceLevel else { return }
         
-        switch destination {
-        case .modulationIndex:
-            // If user routes auxiliary envelope to modIndex too
-            let baseValue = Double(oscLeft.modulationIndex)
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            oscLeft.modulationIndex = AUValue(modulated)
-            oscRight.modulationIndex = AUValue(modulated)
-            
-        case .filterCutoff:
-            // Get current filter cutoff as base
-            let baseValue = Double(filter.cutoffFrequency)
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            filter.cutoffFrequency = AUValue(modulated)
-            
-        case .oscillatorAmplitude:
-            // Modulate amplitude
-            let baseValue = Double(oscLeft.amplitude)
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            oscLeft.amplitude = AUValue(modulated)
-            oscRight.amplitude = AUValue(modulated)
-            
-        case .oscillatorBaseFrequency:
-            // Modulate frequency (vibrato/pitch envelope)
-            let baseValue = modulationState.currentFrequency
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            // Update frequencies with modulation
-            currentFrequency = modulated
-            updateOscillatorFrequencies()
-            
-        case .modulatingMultiplier:
-            // Modulate FM modulator ratio
-            let baseValue = Double(oscLeft.modulatingMultiplier)
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            oscLeft.modulatingMultiplier = AUValue(modulated)
-            oscRight.modulatingMultiplier = AUValue(modulated)
-            
-        case .stereoSpreadAmount:
-            // Modulate stereo spread
-            // This requires updating the frequency offset
-            let baseValue = detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
-            let modulated = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseValue,
-                envelopeValue: value,
-                amount: amount,
-                destination: destination
-            )
-            if detuneMode == .proportional {
-                frequencyOffsetRatio = modulated
-            } else {
-                frequencyOffsetHz = modulated
-            }
-            
-        case .voiceLFOFrequency, .voiceLFOAmount:
-            // Phase 5C: Will implement LFO meta-modulation
-            break
-            
-        case .delayTime, .delayMix:
-            // These are global-level, shouldn't be routed from voice envelope
-            break
-        }
+        // Get base value
+        let baseValue = getBaseValue(for: destination)
+        
+        // Calculate modulated value
+        let modulated = ModulationRouter.applyEnvelopeModulation(
+            baseValue: baseValue,
+            envelopeValue: value,
+            amount: amount,
+            destination: destination
+        )
+        
+        // Apply using centralized method (with zero-duration ramps)
+        applyModulatedValue(modulated, to: destination)
     }
     
     // MARK: - Voice LFO Application (Phase 5C)
@@ -618,40 +546,8 @@ final class PolyphonicVoice {
         // Only apply to voice-level destinations
         guard destination.isVoiceLevel else { return }
         
-        // Get base value - use user-controlled values for amplitude/filter, current values for others
-        let baseValue: Double
-        
-        switch destination {
-        case .modulationIndex:
-            baseValue = Double(oscLeft.modulationIndex)
-            
-        case .filterCutoff:
-            // Use user-controlled base value from modulation state
-            baseValue = modulationState.baseFilterCutoff
-            
-        case .oscillatorAmplitude:
-            // Use user-controlled base value from modulation state
-            baseValue = modulationState.baseAmplitude
-            
-        case .oscillatorBaseFrequency:
-            baseValue = currentFrequency
-            
-        case .modulatingMultiplier:
-            baseValue = Double(oscLeft.modulatingMultiplier)
-            
-        case .stereoSpreadAmount:
-            baseValue = detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
-            
-        case .voiceLFOFrequency, .voiceLFOAmount:
-            // LFO meta-modulation (LFO modulating itself)
-            // These would create interesting recursive effects
-            // For now, skip to avoid complexity
-            return
-            
-        case .delayTime, .delayMix:
-            // These are global, not voice-level
-            return
-        }
+        // Get base value
+        let baseValue = getBaseValue(for: destination)
         
         // Apply LFO modulation
         let modulated = ModulationRouter.applyLFOModulation(
@@ -660,38 +556,8 @@ final class PolyphonicVoice {
             destination: destination
         )
         
-        // Set the modulated parameter
-        switch destination {
-        case .modulationIndex:
-            oscLeft.modulationIndex = AUValue(modulated)
-            oscRight.modulationIndex = AUValue(modulated)
-            
-        case .filterCutoff:
-            filter.cutoffFrequency = AUValue(modulated)
-            
-        case .oscillatorAmplitude:
-            oscLeft.amplitude = AUValue(modulated)
-            oscRight.amplitude = AUValue(modulated)
-            
-        case .oscillatorBaseFrequency:
-            // Update frequency with modulation
-            currentFrequency = modulated
-            updateOscillatorFrequencies()
-            
-        case .modulatingMultiplier:
-            oscLeft.modulatingMultiplier = AUValue(modulated)
-            oscRight.modulatingMultiplier = AUValue(modulated)
-            
-        case .stereoSpreadAmount:
-            if detuneMode == .proportional {
-                frequencyOffsetRatio = modulated
-            } else {
-                frequencyOffsetHz = modulated
-            }
-            
-        case .voiceLFOFrequency, .voiceLFOAmount, .delayTime, .delayMix:
-            break  // Already handled above
-        }
+        // Apply using centralized method (with zero-duration ramps)
+        applyModulatedValue(modulated, to: destination)
     }
     
     // MARK: - Global LFO Application (Phase 5C)
@@ -707,39 +573,8 @@ final class PolyphonicVoice {
         // (Global-level destinations are handled by VoicePool directly)
         guard destination.isVoiceLevel else { return }
         
-        // Get base value - use user-controlled values for amplitude/filter, current values for others
-        let baseValue: Double
-        
-        switch destination {
-        case .modulationIndex:
-            baseValue = Double(oscLeft.modulationIndex)
-            
-        case .filterCutoff:
-            // Use user-controlled base value from modulation state
-            baseValue = modulationState.baseFilterCutoff
-            
-        case .oscillatorAmplitude:
-            // Use user-controlled base value from modulation state
-            baseValue = modulationState.baseAmplitude
-            
-        case .oscillatorBaseFrequency:
-            baseValue = currentFrequency
-            
-        case .modulatingMultiplier:
-            baseValue = Double(oscLeft.modulatingMultiplier)
-            
-        case .stereoSpreadAmount:
-            baseValue = detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
-            
-        case .voiceLFOFrequency, .voiceLFOAmount:
-            // Meta-modulation: global LFO modulating voice LFO
-            // Skip for now to avoid complexity
-            return
-            
-        case .delayTime, .delayMix:
-            // These are handled by VoicePool, not per-voice
-            return
-        }
+        // Get base value
+        let baseValue = getBaseValue(for: destination)
         
         // Apply LFO modulation
         let modulated = ModulationRouter.applyLFOModulation(
@@ -748,38 +583,8 @@ final class PolyphonicVoice {
             destination: destination
         )
         
-        // Set the modulated parameter
-        switch destination {
-        case .modulationIndex:
-            oscLeft.modulationIndex = AUValue(modulated)
-            oscRight.modulationIndex = AUValue(modulated)
-            
-        case .filterCutoff:
-            filter.cutoffFrequency = AUValue(modulated)
-            
-        case .oscillatorAmplitude:
-            oscLeft.amplitude = AUValue(modulated)
-            oscRight.amplitude = AUValue(modulated)
-            
-        case .oscillatorBaseFrequency:
-            // Update frequency with modulation
-            currentFrequency = modulated
-            updateOscillatorFrequencies()
-            
-        case .modulatingMultiplier:
-            oscLeft.modulatingMultiplier = AUValue(modulated)
-            oscRight.modulatingMultiplier = AUValue(modulated)
-            
-        case .stereoSpreadAmount:
-            if detuneMode == .proportional {
-                frequencyOffsetRatio = modulated
-            } else {
-                frequencyOffsetHz = modulated
-            }
-            
-        case .voiceLFOFrequency, .voiceLFOAmount, .delayTime, .delayMix:
-            break  // Already handled above
-        }
+        // Apply using centralized method (with zero-duration ramps)
+        applyModulatedValue(modulated, to: destination)
     }
     
     // MARK: - Touch Modulation (Phase 5D)

@@ -134,20 +134,20 @@ struct VoiceParameters: Codable, Equatable {
                 resetMode: .free,
                 frequencyMode: .hertz,
                 frequency: 6.0,
-                destination: .oscillatorBaseFrequency,
-                amount: 0.0,                         // Disabled by default
-                isEnabled: false
+                destination: .oscillatorAmplitude,
+                amount: 0.5,                         // Disabled by default
+                isEnabled: true
             ),
             keyTracking: .default,
             touchInitial: TouchInitialParameters(
                 destination: .oscillatorAmplitude,   // Touch X controls amplitude
                 amount: 1.0,                         // Full range (0.0 to 1.0)
-                isEnabled: false                      // Standard touch control
+                isEnabled: true                      // Standard touch control
             ),
             touchAftertouch: TouchAftertouchParameters(
                 destination: .filterCutoff,          // Aftertouch controls filter
                 amount: 5.0,                         // Moderate sensitivity
-                isEnabled: false                      // Standard aftertouch control
+                isEnabled: true                      // Standard aftertouch control
             )
         )
     )
