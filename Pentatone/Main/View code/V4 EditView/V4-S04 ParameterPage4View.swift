@@ -8,7 +8,7 @@
 /*
 PAGE 4 - GLOBAL
  1) Tempo. SLIDER. Values: 30-240, integers only
- 2) Polyphony. SLIDER. Values: 1-12, integers only
+ 2) Voice mode. List. Values: Poly, Mono
  3) Root frequency. SLIDER. Values: 98-220 continuous
  4) Root octave. LIST. Values: -2,-1,0,1,2
  5) Fine tune. SLIDER. Values: 98-220 continuous

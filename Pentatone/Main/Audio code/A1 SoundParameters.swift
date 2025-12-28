@@ -139,7 +139,7 @@ struct VoiceParameters: Codable, Equatable {
                 release: 0.1,
                 destination: .modulationIndex,
                 amount: 0.0,
-                isEnabled: false
+                isEnabled: true
             ),
             auxiliaryEnvelope: ModulationEnvelopeParameters(
                 attack: 0.1,
@@ -148,7 +148,7 @@ struct VoiceParameters: Codable, Equatable {
                 release: 0.3,
                 destination: .filterCutoff,
                 amount: 0.0,
-                isEnabled: false
+                isEnabled: true
             ),
             voiceLFO: LFOParameters(
                 waveform: .square,
@@ -160,14 +160,15 @@ struct VoiceParameters: Codable, Equatable {
                 isEnabled: true
             ),
             keyTracking: .default,
+            
             touchInitial: TouchInitialParameters(
                 destination: .oscillatorAmplitude,   // Touch X controls amplitude
-                amount: 0.0,                         // Full range (0.0 to 1.0)
+                amount: 1.0,                         // Full range (0.0 to 1.0)
                 isEnabled: true                      // Standard touch control
             ),
             touchAftertouch: TouchAftertouchParameters(
                 destination: .filterCutoff,          // Aftertouch controls filter
-                amount: 0.0,                         // Moderate sensitivity
+                amount: 5.0,                         // Moderate sensitivity
                 isEnabled: true                      // Standard aftertouch control
             )
         )
