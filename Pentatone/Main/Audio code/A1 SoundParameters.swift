@@ -26,16 +26,6 @@ enum VoiceMode: String, Codable, Equatable, CaseIterable {
         case .polyphonic: return "Polyphonic"
         }
     }
-    
-    /// Number of voices for this mode
-    /// - Parameter currentPolyphony: The polyphony setting (used for polyphonic mode)
-    /// - Returns: 1 for monophonic, currentPolyphony for polyphonic
-    func voiceCount(currentPolyphony: Int) -> Int {
-        switch self {
-        case .monophonic: return 1
-        case .polyphonic: return currentPolyphony
-        }
-    }
 }
 
 /// Waveform types available for the FM oscillator
@@ -323,7 +313,7 @@ struct MasterParameters: Codable, Equatable {
             isEnabled: false                    // ← SET TO false TO DISABLE
         ),
         tempo: 120.0,
-        voiceMode: .monophonic
+        voiceMode: .polyphonic
     )
 }
 
@@ -437,8 +427,24 @@ final class AudioParameterManager: ObservableObject {
     
     /// Update voice mode (monophonic/polyphonic)
     /// This requires recreating the voice pool with the new voice count
-    func updateVoiceMode(_ mode: VoiceMode) {
+    func updateVoiceMode(_ mode: VoiceMode, completion: @escaping () -> Void = {}) {
+        // Update the parameter
         master.voiceMode = mode
+        
+        // Calculate new voice count
+        let newVoiceCount: Int
+        switch mode {
+        case .monophonic:
+            newVoiceCount = 1
+        case .polyphonic:
+            newVoiceCount = nominalPolyphony
+        }
+        
+        // Update the voice pool
+        voicePool?.setPolyphony(newVoiceCount) {
+            print("🎵 Voice mode switched to \(mode.displayName)")
+            completion()
+        }
     }
     
     // MARK: - Global Pitch Updates

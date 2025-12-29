@@ -21,15 +21,6 @@ final class VoicePool {
     
     // MARK: - Configuration
     
-    /// Minimum allowed polyphony
-    static let minPolyphony = 1
-    
-    /// Maximum allowed polyphony
-    static let maxPolyphony = 12
-    
-
-    
-    /// Current voice count
     private(set) var voiceCount: Int
     
     // MARK: - Voice Management
@@ -71,7 +62,7 @@ final class VoicePool {
     /// - Parameter voiceCount: Number of voices (clamped to min/max range)
     init(voiceCount: Int = currentPolyphony) {
         // Clamp voice count to valid range
-        self.voiceCount = min(max(voiceCount, Self.minPolyphony), Self.maxPolyphony)
+        self.voiceCount = voiceCount
         
         // Create mixer first
         self.voiceMixer = Mixer()
@@ -276,13 +267,69 @@ final class VoicePool {
     
     // MARK: - Polyphony Adjustment
     
-    /// Changes the polyphony (number of voices)
-    /// WARNING: This requires recreating the voice pool and should be done carefully
-    /// Not implemented in Phase 1 - voices are fixed at initialization
-    func setPolyphony(_ count: Int) {
-        // TODO: Phase 8 - Implement runtime polyphony adjustment
-        // Requires stopping engine, recreating voices, reconnecting to mixer
-        print("⚠️ Runtime polyphony adjustment not yet implemented")
+    /// Changes the polyphony by recreating the entire voice pool
+    /// This is used to switch between monophonic (1 voice) and polyphonic (nominalPolyphony voices) modes
+    /// - Parameter count: Number of voices (typically 1 for mono, nominalPolyphony for poly)
+    /// - Parameter completion: Called after recreation is complete
+    func setPolyphony(_ count: Int, completion: @escaping () -> Void) {
+        print("🎵 Changing polyphony from \(voiceCount) to \(count) voices...")
+        
+        // Stop all playing notes and clear key mappings
+        stopAll()
+        
+        // Reset voice index to prevent out-of-bounds access
+        currentVoiceIndex = 0
+        
+        // Properly clean up each voice (stops oscillators)
+        for voice in voices {
+            voice.cleanup()
+        }
+        
+        // Disconnect all voices from mixer
+        for voice in voices {
+            voiceMixer.removeInput(voice.envelope)
+        }
+        
+        // Schedule the actual recreation on a background queue to avoid blocking UI
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.05) {
+            // Clear the voices array (this will deallocate the old voices)
+            self.voices.removeAll()
+            
+            // Update voice count
+            self.voiceCount = count
+            
+            // Update global currentPolyphony to match
+            currentPolyphony = count
+            
+            // Create new voices with current parameters
+            let voiceParams = VoiceParameters.default
+            var newVoices: [PolyphonicVoice] = []
+            for _ in 0..<count {
+                let voice = PolyphonicVoice(parameters: voiceParams)
+                newVoices.append(voice)
+            }
+            
+            // Return to main thread for AudioKit operations
+            DispatchQueue.main.async {
+                // Assign new voices
+                self.voices = newVoices
+                
+                // Reconnect all voices to mixer
+                for voice in self.voices {
+                    self.voiceMixer.addInput(voice.envelope)
+                }
+                
+                // Initialize the new voices if pool was already initialized
+                if self.isInitialized {
+                    for voice in self.voices {
+                        voice.initialize()
+                    }
+                }
+                
+                print("🎵 Polyphony changed to \(count) voice(s) - \(count == 1 ? "monophonic" : "polyphonic") mode")
+                completion()
+            }
+        }
     }
     
     // MARK: - Parameter Updates

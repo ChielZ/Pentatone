@@ -71,8 +71,14 @@ struct VoiceView: View {
                                 .foregroundColor(Color("BackgroundColour"))
                                 .adaptiveFont("Futura", size: 30)
                         )
+                        .onTapGesture {
+                            // Switch to monophonic
+                            if paramManager.master.voiceMode != .monophonic {
+                                paramManager.updateVoiceMode(.monophonic)
+                            }
+                        }
                     Spacer()
-                    Text("POLY")
+                    Text(paramManager.master.voiceMode == .monophonic ? "MONO" : "POLY")
                         .foregroundColor(Color("HighlightColour"))
                         .adaptiveFont("Futura", size: 30)
                     Spacer()
@@ -84,6 +90,12 @@ struct VoiceView: View {
                                 .foregroundColor(Color("BackgroundColour"))
                                 .adaptiveFont("Futura", size: 30)
                         )
+                        .onTapGesture {
+                            // Switch to polyphonic
+                            if paramManager.master.voiceMode != .polyphonic {
+                                paramManager.updateVoiceMode(.polyphonic)
+                            }
+                        }
                 }
             }
             ZStack { // Row 8
