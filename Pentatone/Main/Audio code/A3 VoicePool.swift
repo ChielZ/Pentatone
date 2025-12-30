@@ -231,10 +231,33 @@ final class VoicePool {
     
     // MARK: - Voice Recreation (for waveform changes)
     
+    /// Recreates only the oscillators in all voices with a new waveform
+    /// This is more efficient than recreating entire voices and avoids connection issues
+    /// Warning: Will briefly interrupt any currently playing notes
+    /// - Parameters:
+    ///   - waveform: The new waveform to use
+    ///   - completion: Called when oscillator recreation is complete
+    func recreateOscillators(waveform: OscillatorWaveform, completion: @escaping () -> Void) {
+        print("🎵 Starting oscillator recreation with waveform: \(waveform)...")
+        
+        // Stop all playing notes and clear key mappings
+        stopAll()
+        
+        // Recreate oscillators in each voice
+        for (index, voice) in voices.enumerated() {
+            voice.recreateOscillators(waveform: waveform)
+            print("🎵   Voice \(index): oscillators recreated")
+        }
+        
+        print("🎵 ✅ Oscillator recreation complete - \(voices.count) voices ready")
+        completion()
+    }
+    
     /// Recreates all voices with new parameters (e.g., when waveform changes)
     /// This properly cleans up old voices and creates new ones
     /// Note: Voice count remains fixed at nominalPolyphony
     /// Warning: Kills any currently playing notes
+    /// DEPRECATED: Use recreateOscillators() instead for waveform changes
     func recreateVoices(with parameters: VoiceParameters, completion: @escaping () -> Void) {
         print("🎵 Starting voice recreation...")
         

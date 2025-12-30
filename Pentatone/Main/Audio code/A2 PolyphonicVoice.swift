@@ -40,16 +40,16 @@ final class PolyphonicVoice {
     // MARK: - Audio Nodes
     
     /// Left oscillator (will be panned hard left)
-    let oscLeft: FMOscillator
+    var oscLeft: FMOscillator
     
     /// Right oscillator (will be panned hard right)
-    let oscRight: FMOscillator
+    var oscRight: FMOscillator
     
     /// Panner for left oscillator (hard left)
-    private let panLeft: Panner
+    private var panLeft: Panner
     
     /// Panner for right oscillator (hard right)
-    private let panRight: Panner
+    private var panRight: Panner
     
     /// Stereo mixer to combine panned oscillators
     private let stereoMixer: Mixer
@@ -203,6 +203,89 @@ final class PolyphonicVoice {
             isInitialized = false
         }
         isAvailable = true
+    }
+    
+    // MARK: - Oscillator Recreation
+    
+    /// Recreates the oscillators with a new waveform while keeping the rest of the voice intact
+    /// This allows waveform changes without recreating the entire voice
+    /// - Parameter waveform: The new waveform to use
+    func recreateOscillators(waveform: OscillatorWaveform) {
+        print("🎵 Recreating oscillators for voice with new waveform: \(waveform)")
+        
+        // Store current state before recreation
+        let wasInitialized = isInitialized
+        let currentBaseFreq = currentFrequency
+        let currentAmplitude = oscLeft.amplitude
+        let currentCarrierMult = oscLeft.carrierMultiplier
+        let currentModulatingMult = oscLeft.modulatingMultiplier
+        let currentModIndex = oscLeft.modulationIndex
+        
+        // Stop and disconnect old oscillators
+        if isInitialized {
+            oscLeft.stop()
+            oscRight.stop()
+        }
+        
+        // Disconnect old panners from stereo mixer
+        stereoMixer.removeInput(panLeft)
+        stereoMixer.removeInput(panRight)
+        
+        // Create new oscillators with the new waveform
+        let newOscLeft = FMOscillator(
+            waveform: waveform.makeTable(),
+            baseFrequency: AUValue(currentBaseFreq),
+            carrierMultiplier: currentCarrierMult,
+            modulatingMultiplier: currentModulatingMult,
+            modulationIndex: currentModIndex,
+            amplitude: currentAmplitude
+        )
+        
+        let newOscRight = FMOscillator(
+            waveform: waveform.makeTable(),
+            baseFrequency: AUValue(currentBaseFreq),
+            carrierMultiplier: currentCarrierMult,
+            modulatingMultiplier: currentModulatingMult,
+            modulationIndex: currentModIndex,
+            amplitude: currentAmplitude
+        )
+        
+        // Create new panners with the new oscillators
+        let newPanLeft = Panner(newOscLeft, pan: -1.0)  // Hard left
+        let newPanRight = Panner(newOscRight, pan: 1.0)  // Hard right
+        
+        // Connect new panners to stereo mixer
+        stereoMixer.addInput(newPanLeft)
+        stereoMixer.addInput(newPanRight)
+        
+        // Update references
+        self.oscLeft = newOscLeft
+        self.oscRight = newOscRight
+        self.panLeft = newPanLeft
+        self.panRight = newPanRight
+        
+        // Reinitialize if the voice was previously initialized
+        if wasInitialized {
+            // Set ramp duration to 0 for instant parameter changes
+            oscLeft.$baseFrequency.ramp(to: Float(currentFrequency), duration: 0)
+            oscRight.$baseFrequency.ramp(to: Float(currentFrequency), duration: 0)
+            oscLeft.$amplitude.ramp(to: currentAmplitude, duration: 0)
+            oscRight.$amplitude.ramp(to: currentAmplitude, duration: 0)
+            
+            // Start new oscillators
+            oscLeft.start()
+            oscRight.start()
+            
+            // Restore initialized state
+            isInitialized = true
+            
+            // Apply frequency offsets
+            updateOscillatorFrequencies()
+            
+            print("🎵   Oscillators recreated and restarted")
+        } else {
+            print("🎵   Oscillators recreated (not yet initialized)")
+        }
     }
     
     // MARK: - Frequency Control

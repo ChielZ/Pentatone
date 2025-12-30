@@ -38,9 +38,9 @@ struct OscillatorView: View {
                     get: { paramManager.voiceTemplate.oscillator.waveform },
                     set: { newValue in
                         paramManager.updateOscillatorWaveform(newValue)
-                        // Recreate all voices with new waveform
-                        voicePool.recreateVoices(with: paramManager.voiceTemplate) {
-                            print("🎹 Voices recreated with waveform: \(newValue.displayName)")
+                        // Recreate only the oscillators with new waveform
+                        voicePool.recreateOscillators(waveform: newValue) {
+                            print("🎹 Oscillators recreated with waveform: \(newValue.displayName)")
                         }
                     }
                 ),
