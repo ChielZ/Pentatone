@@ -579,6 +579,53 @@ final class AudioParameterManager: ObservableObject {
         voiceTemplate.filter.saturation = value
     }
     
+    // MARK: - Individual Modulation Parameter Updates
+    
+    /// Update modulator envelope attack
+    func updateModulatorEnvelopeAttack(_ value: Double) {
+        voiceTemplate.modulation.modulatorEnvelope.attack = value
+    }
+    
+    /// Update modulator envelope decay
+    func updateModulatorEnvelopeDecay(_ value: Double) {
+        voiceTemplate.modulation.modulatorEnvelope.decay = value
+    }
+    
+    /// Update modulator envelope sustain
+    func updateModulatorEnvelopeSustain(_ value: Double) {
+        voiceTemplate.modulation.modulatorEnvelope.sustain = value
+    }
+    
+    /// Update modulator envelope release
+    func updateModulatorEnvelopeRelease(_ value: Double) {
+        voiceTemplate.modulation.modulatorEnvelope.release = value
+    }
+    
+    /// Update modulator envelope amount
+    func updateModulatorEnvelopeAmount(_ value: Double) {
+        voiceTemplate.modulation.modulatorEnvelope.amount = value
+    }
+    
+    /// Update modulator envelope destination
+    func updateModulatorEnvelopeDestination(_ destination: ModulationDestination) {
+        voiceTemplate.modulation.modulatorEnvelope.destination = destination
+    }
+    
+    /// Update key tracking destination
+    func updateKeyTrackingDestination(_ destination: ModulationDestination) {
+        voiceTemplate.modulation.keyTracking.destination = destination
+    }
+    
+    /// Update key tracking amount
+    func updateKeyTrackingAmount(_ value: Double) {
+        voiceTemplate.modulation.keyTracking.amount = value
+    }
+    
+    /// Update key tracking enabled state
+    func updateKeyTrackingEnabled(_ enabled: Bool) {
+        voiceTemplate.modulation.keyTracking.isEnabled = enabled
+    }
+    
     // MARK: - Preset Management
     
     /// Load a complete parameter set (preset)

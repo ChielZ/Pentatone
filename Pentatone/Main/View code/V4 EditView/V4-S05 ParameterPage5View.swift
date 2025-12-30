@@ -19,62 +19,148 @@ PAGE 5 - MODULATOR ENVELOPE  + KEYBOARD TRACKING
 import SwiftUI
 
 struct ModEnvView: View {
+    // Connect to the global parameter manager
+    @ObservedObject private var paramManager = AudioParameterManager.shared
+    
     var body: some View {
         Group {
-            ZStack { // Row 3
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("MOD ENVELOPE ATTACK")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-            }
-            ZStack { // Row 4
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("MOD ENVELOPE DECAY")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-            }
-            ZStack { // Row 5
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("MOD ENVELOPE SUSTAIN")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-            }
+            // Row 3 - Modulator Envelope Attack (0-5 seconds)
+            SliderRow(
+                label: "MOD ENVELOPE ATTACK",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.modulatorEnvelope.attack },
+                    set: { newValue in
+                        paramManager.updateModulatorEnvelopeAttack(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.001,
+                displayFormatter: { String(format: "%.3f s", $0) }
+            )
             
-            ZStack { // Row 6
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("MOD ENVELOPE RELEASE")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-           }
+            // Row 4 - Modulator Envelope Decay (0-5 seconds)
+            SliderRow(
+                label: "MOD ENVELOPE DECAY",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.modulatorEnvelope.decay },
+                    set: { newValue in
+                        paramManager.updateModulatorEnvelopeDecay(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.001,
+                displayFormatter: { String(format: "%.3f s", $0) }
+            )
             
-            ZStack { // Row 7
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("MOD ENVELOPE AMOUNT")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-
-              }
-            ZStack { // Row 8
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("KEY TRACK DESTINATION")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-
-             }
-            ZStack { // Row 9
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                Text("KEY TRACK AMOUNT")
-                    .foregroundColor(Color("HighlightColour"))
-                    .adaptiveFont("Futura", size: 30)
-
-            }
+            // Row 5 - Modulator Envelope Sustain (0-1)
+            SliderRow(
+                label: "MOD ENVELOPE SUSTAIN",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.modulatorEnvelope.sustain },
+                    set: { newValue in
+                        paramManager.updateModulatorEnvelopeSustain(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: 0...1,
+                step: 0.001,
+                displayFormatter: { String(format: "%.3f", $0) }
+            )
+            
+            // Row 6 - Modulator Envelope Release (0-5 seconds)
+            SliderRow(
+                label: "MOD ENVELOPE RELEASE",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.modulatorEnvelope.release },
+                    set: { newValue in
+                        paramManager.updateModulatorEnvelopeRelease(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: 0...5,
+                step: 0.001,
+                displayFormatter: { String(format: "%.3f s", $0) }
+            )
+            
+            // Row 7 - Modulator Envelope Amount (-1.0 to +1.0)
+            SliderRow(
+                label: "MOD ENVELOPE AMOUNT",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.modulatorEnvelope.amount },
+                    set: { newValue in
+                        paramManager.updateModulatorEnvelopeAmount(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: -1...1,
+                step: 0.01,
+                displayFormatter: { value in
+                    let rounded = value
+                    return rounded > 0 ? String(format: "+%.2f", rounded) : String(format: "%.2f", rounded)
+                }
+            )
+            
+            // Row 8 - Key Tracking Destination (List of modulation destinations)
+            ParameterRow(
+                label: "KEY TRACK DESTINATION",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.keyTracking.destination },
+                    set: { newValue in
+                        paramManager.updateKeyTrackingDestination(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                displayText: { destination in
+                    // Shortened names to fit in UI
+                    switch destination {
+                    case .oscillatorAmplitude: return "OSC AMP"
+                    case .oscillatorBaseFrequency: return "OSC FREQ"
+                    case .modulationIndex: return "MOD IDX"
+                    case .modulatingMultiplier: return "MOD MULT"
+                    case .filterCutoff: return "FILTER"
+                    case .stereoSpreadAmount: return "SPREAD"
+                    case .voiceLFOFrequency: return "LFO RATE"
+                    case .voiceLFOAmount: return "LFO DEPTH"
+                    case .delayTime: return "DLY TIME"
+                    case .delayMix: return "DLY MIX"
+                    }
+                }
+            )
+            
+            // Row 9 - Key Tracking Amount (-1.0 to +1.0)
+            SliderRow(
+                label: "KEY TRACK AMOUNT",
+                value: Binding(
+                    get: { paramManager.voiceTemplate.modulation.keyTracking.amount },
+                    set: { newValue in
+                        paramManager.updateKeyTrackingAmount(newValue)
+                        applyModulationToAllVoices()
+                    }
+                ),
+                range: -1...1,
+                step: 0.01,
+                displayFormatter: { value in
+                    let rounded = value
+                    return rounded > 0 ? String(format: "+%.2f", rounded) : String(format: "%.2f", rounded)
+                }
+            )
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Applies current modulation parameters to all active voices
+    private func applyModulationToAllVoices() {
+        let modulationParams = paramManager.voiceTemplate.modulation
+        
+        // Apply to all voices in the pool
+        // Note: This requires the voicePool to have an update method
+        // For now, this is a placeholder - the actual implementation
+        // will depend on how the voice pool exposes modulation updates
+        for voice in voicePool.voices {
+            voice.updateModulationParameters(modulationParams)
         }
     }
 }
