@@ -178,7 +178,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  CONCEPT FOR FINAL STRUCTURE OF EDITABLE PARAMETERS / SOUND EDITING SCREENS
  
  
- 1. VOICE
+ 1. VOICE √
  
  a) Oscillator (the same parameter values will be applied to both the left-panned and right-panned FMOscillators
  - Waveform (shared between Carrier and Modulator, options: sine, triangle, square)
@@ -204,7 +204,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  - Release time
  
  
- 2. FX CHAIN
+ 2. FX CHAIN √
  
  a) Delay
  - Delay time (implement as sync to master tempo?)
@@ -218,7 +218,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  - Reverb mix
  
  
- 3. MASTER
+ 3. MASTER √
  
  - Tempo
  - Voice mode (polyphonic/monophonic)
@@ -293,7 +293,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  
  PARAMETER PAGE VIEWS
  
- PAGE 1 - VOICE OSCILLATORS
+ √ PAGE 1 - VOICE OSCILLATORS
  1) Oscillator Waveform. LIST. Values: sine, triangle, square
  2) Carrier multiplier. SLIDER. Values: integers only, range 1-16
  3) Modulator multiplier coarse. SLIDER. Values: integers only, range 1-16
@@ -302,7 +302,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  6) Stereo offset mode. LIST. Values: constant, proportional
  7) Stereo offset amount. SLIDER. Values: 0-4 continuous for constant offset mode, 1.0000-1.0100 continuous for proportional offset mode
  
- PAGE 2 - VOICE CONTOUR
+ √ PAGE 2 - VOICE CONTOUR
  1) Amp Envelope Attack time. SLIDER. Values: 0-5 continuous
  2) Amp Envelope Decay time. SLIDER. Values: 0-5 continuous
  3) Amp Envelope Sustain level. SLIDER. Values: 0-1 continuous
@@ -311,7 +311,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  6) Lowpass Filter Resonance. SLIDER. Values: 0-2 continuous
  7) Lowpass Filter Saturation. SLIDER. Values: 0-10 continuous
 
- PAGE 3 - EFFECTS
+ √ PAGE 3 - EFFECTS
  1) Delay time. LIST. Values: 1/32, 1/24, 1/16, 3/32, 1/8, 3/16, 1/4
  2) Delay feedback. SLIDER. Values: 0-1 continuous
  3) Delay PingPong
@@ -320,7 +320,7 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  6) Reverb tone. SLIDER. Values: 0-1 continuous
  7) Reverb mix. SLIDER. Values: 0-1 continuous
  
- PAGE 4 - GLOBAL
+ √ PAGE 4 - GLOBAL
  1) Tempo. SLIDER. Values: 30-240, integers only
  2) Polyphony. SLIDER. Values: 1-12, integers only
  3) Root frequency. SLIDER. Values: 98-220 continuous

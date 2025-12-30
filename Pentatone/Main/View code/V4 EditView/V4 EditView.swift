@@ -13,7 +13,7 @@ import SwiftUI
 
 
 enum EditSubView: CaseIterable {
-    case oscillators, contour, effects, global
+    case oscillators, contour, effects, global, modenv, auxenv,voicelfo,globallfo
     
     var displayName: String {
         switch self {
@@ -21,6 +21,10 @@ enum EditSubView: CaseIterable {
         case .contour: return "CONTOUR"
         case .effects: return "EFFECTS"
         case .global: return "GLOBAL"
+        case .modenv: return "MOD / TRACK"
+        case .auxenv: return "AUX ENV"
+        case .voicelfo: return "VOICE LFO"
+        case .globallfo: return "GLOBAL LFO"
         }
     }
 }
@@ -122,8 +126,7 @@ struct EditView: View {
                 }
 
                 
-                
-                // Rows 3-9: Show the current subview
+   
                 Group {
                     switch currentSubView {
                     case .oscillators:
@@ -136,10 +139,22 @@ struct EditView: View {
                         EffectsView()
                     case .global:
                         GlobalView()
+                    case .modenv:
+                        ModEnvView()
+                    case .auxenv:
+                        AuxEnvView()
+                    case .voicelfo:
+                        VoiceLFOView()
+                    case .globallfo:
+                        GlobLFOView()
                     }
                 }
                 .frame(maxHeight: .infinity)
- /*
+                
+   
+                
+                
+                /*
                 ZStack { // Row 10
                     RoundedRectangle(cornerRadius: radius)
                         .fill(Color("BackgroundColour"))
