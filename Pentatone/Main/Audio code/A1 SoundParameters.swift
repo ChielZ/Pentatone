@@ -626,6 +626,36 @@ final class AudioParameterManager: ObservableObject {
         voiceTemplate.modulation.keyTracking.isEnabled = enabled
     }
     
+    /// Update auxiliary envelope attack
+    func updateAuxiliaryEnvelopeAttack(_ value: Double) {
+        voiceTemplate.modulation.auxiliaryEnvelope.attack = value
+    }
+    
+    /// Update auxiliary envelope decay
+    func updateAuxiliaryEnvelopeDecay(_ value: Double) {
+        voiceTemplate.modulation.auxiliaryEnvelope.decay = value
+    }
+    
+    /// Update auxiliary envelope sustain
+    func updateAuxiliaryEnvelopeSustain(_ value: Double) {
+        voiceTemplate.modulation.auxiliaryEnvelope.sustain = value
+    }
+    
+    /// Update auxiliary envelope release
+    func updateAuxiliaryEnvelopeRelease(_ value: Double) {
+        voiceTemplate.modulation.auxiliaryEnvelope.release = value
+    }
+    
+    /// Update auxiliary envelope destination
+    func updateAuxiliaryEnvelopeDestination(_ destination: ModulationDestination) {
+        voiceTemplate.modulation.auxiliaryEnvelope.destination = destination
+    }
+    
+    /// Update auxiliary envelope amount
+    func updateAuxiliaryEnvelopeAmount(_ value: Double) {
+        voiceTemplate.modulation.auxiliaryEnvelope.amount = value
+    }
+    
     // MARK: - Preset Management
     
     /// Load a complete parameter set (preset)
