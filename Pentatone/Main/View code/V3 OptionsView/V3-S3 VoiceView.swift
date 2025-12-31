@@ -20,6 +20,7 @@ struct VoiceView: View {
     
     var body: some View {
         Group {
+            
             ZStack { // Row 3
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
@@ -30,17 +31,10 @@ struct VoiceView: View {
             ZStack { // Row 4
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
-                HStack {
-                    
-                }
-            }
-            ZStack { // Row 5
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
                 GeometryReader { geometry in
                     Text("Pentatone")
                         .foregroundColor(Color("KeyColour1"))
-                        .adaptiveFont("Signpainter", size: 65)
+                        .adaptiveFont("Signpainter", size: 55)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .contentShape(Rectangle())
                         .offset(y: -(geometry.size.height/2 + 11))
@@ -51,15 +45,10 @@ struct VoiceView: View {
                 }
             }
             
-            ZStack { // Row 6
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                HStack {
-                    
-                }
-            }
             
-            ZStack { // Row 7
+            
+            
+            ZStack { // Row 5
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
                 HStack {
@@ -98,7 +87,7 @@ struct VoiceView: View {
                         }
                 }
             }
-            ZStack { // Row 8
+            ZStack { // Row 6
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
                 HStack {
@@ -137,7 +126,7 @@ struct VoiceView: View {
                         }
                 }
             }
-            ZStack { // Row 9
+            ZStack { // Row 7
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
                 HStack {
@@ -174,8 +163,33 @@ struct VoiceView: View {
                                 paramManager.updateFineTuneCents(Double(current + 1))
                              }
                         }
+                    
+                }
+                
+            }
+            ZStack { // Row 8
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color("BackgroundColour"))
+                HStack {
+                    
                 }
             }
+            
+            ZStack { // Row 9
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color("SupportColour"))
+                GeometryReader { geometry in
+                    Text("•MANUAL•")
+                        .foregroundColor(Color("BackgroundColour"))
+                        .adaptiveFont("Futura", size: 30)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .contentShape(Rectangle())
+                        //.offset(y: -(geometry.size.height/2 + 11))
+                        .padding(0)
+                }
+            }
+            
+            
         }
     }
 }

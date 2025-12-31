@@ -116,7 +116,7 @@ struct EditView: View {
                     GeometryReader { geometry in
                         Text("Pentatone")
                             .foregroundColor(Color("KeyColour1"))
-                            .adaptiveFont("Signpainter", size: 65)
+                            .adaptiveFont("Signpainter", size: 55)
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .contentShape(Rectangle())
                             .onTapGesture {

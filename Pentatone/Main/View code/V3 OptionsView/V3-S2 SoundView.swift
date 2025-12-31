@@ -14,8 +14,25 @@ struct SoundView: View {
             ZStack { // Row 3
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
+                
             }
-            ZStack { // Row 7
+            ZStack { // Row 4
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color("BackgroundColour"))
+                GeometryReader { geometry in
+                    Text("Pentatone")
+                        .foregroundColor(Color("KeyColour1"))
+                        .adaptiveFont("Signpainter", size: 55)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .contentShape(Rectangle())
+                        .offset(y: -(geometry.size.height/2 + 11))
+                        .padding(0)
+                        //.onTapGesture {
+                        //    onSwitchToEdit?()
+                        }
+                
+            }
+            ZStack { // Row 4
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("HighlightColour"))
                 RoundedRectangle(cornerRadius: radius)
@@ -33,7 +50,7 @@ struct SoundView: View {
                     .foregroundColor(Color("BackgroundColour"))
                     .adaptiveFont("Futura", size: 30)
             }
-            ZStack { // Row 8
+            ZStack { // Row 5
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("HighlightColour"))
                 RoundedRectangle(cornerRadius: radius)
@@ -51,7 +68,7 @@ struct SoundView: View {
                     .foregroundColor(Color("BackgroundColour"))
                     .adaptiveFont("Futura", size: 30)
             }
-            ZStack { // Row 9
+            ZStack { // Row 6
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("HighlightColour"))
                 RoundedRectangle(cornerRadius: radius)
@@ -70,12 +87,12 @@ struct SoundView: View {
                     .adaptiveFont("Futura", size: 30)
             }
             
-            ZStack { // Row 6
+            ZStack { // Row 7
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
                 HStack {
                     RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("BackgroundColour"))
+                        .fill(Color("SupportColour"))
                         .aspectRatio(1.0, contentMode: .fit)
                         .overlay(
                             Text("<")
@@ -88,7 +105,7 @@ struct SoundView: View {
                         .adaptiveFont("Futura", size: 30)
                     Spacer()
                     RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("BackgroundColour"))
+                        .fill(Color("SupportColour"))
                         .aspectRatio(1.0, contentMode: .fit)
                         .overlay(
                             Text(">")
@@ -97,7 +114,7 @@ struct SoundView: View {
                         )
                 }
             }
-            ZStack { // Row 4
+            ZStack { // Row 8
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("BackgroundColour"))
                 HStack {
@@ -148,57 +165,7 @@ struct SoundView: View {
                     
                 }
             }
-            ZStack { // Row 5
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(Color("BackgroundColour"))
-                HStack {
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("SupportColour"))
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .overlay(
-                            Text("1")
-                                .foregroundColor(Color("HighlightColour"))
-                                .adaptiveFont("Futura", size: 30)
-                        )
-                    Spacer()
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("SupportColour"))
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .overlay(
-                            Text("2")
-                                .foregroundColor(Color("BackgroundColour"))
-                                .adaptiveFont("Futura", size: 30)
-                        )
-                    Spacer()
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("SupportColour"))
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .overlay(
-                            Text("3")
-                                .foregroundColor(Color("BackgroundColour"))
-                                .adaptiveFont("Futura", size: 30)
-                        )
-                    Spacer()
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("SupportColour"))
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .overlay(
-                            Text("4")
-                                .foregroundColor(Color("BackgroundColour"))
-                                .adaptiveFont("Futura", size: 30)
-                        )
-                    Spacer()
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(Color("SupportColour"))
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .overlay(
-                            Text("5")
-                                .foregroundColor(Color("BackgroundColour"))
-                                .adaptiveFont("Futura", size: 30)
-                        )
-                    
-                }
-            }
+            
         }
     }
 }

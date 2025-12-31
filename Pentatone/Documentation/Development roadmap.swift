@@ -177,197 +177,87 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  
  CONCEPT FOR FINAL STRUCTURE OF EDITABLE PARAMETERS / SOUND EDITING SCREENS
  
- 
- 1. VOICE √
- 
- a) Oscillator (the same parameter values will be applied to both the left-panned and right-panned FMOscillators
- - Waveform (shared between Carrier and Modulator, options: sine, triangle, square)
- - Carrier multiplier (=>carrierMultiplier)
- - Modulator multiplier coarse (=>modulatingMultiplier, integer values)
- - Modulator multiplier fine (=> modulatingMultiplier, .00 - .99)
- - Modulator base level (=> modulationIndex)
- - Amplitude (=>amplitude)
- 
- b) Stereo spread
- - Offset mode (absolute vs relative)
- - Offset amount
- 
- c) Filter
- - Cutoff
- - Resonance
- - Saturation
- 
- d) AmplitudeEnvelope
- - Attack time
- - Decay time
- - Sustain level
- - Release time
- 
- 
- 2. FX CHAIN √
- 
- a) Delay
- - Delay time (implement as sync to master tempo?)
- - Delay feedback
- - Delay PingPong
- - Delay mix
- 
- b) Reverb
- - Reverb size
- - Reverb tone
- - Reverb mix
- 
- 
- 3. MASTER √
- 
- - Tempo
- - Voice mode (polyphonic/monophonic)
- - Root frequency
- - Octave
- - Fine tune
- - Master volume (pre or post fx? For pre fx, could be mapped to voicemixer volume)
- 
- 
- 4. MODULATION
- 
- a) Modulator envelope (should exist per-voice, destination is 'hard wired' to oscillators' modulationIndex)
- - Attack time
- - Decay time
- - Sustain level
- - Release time
- - Envelope amount (=> modulationIndex + Modulation envelope value * envelope amount)
- 
- b) Auxiliary Envelope (should exist per-voice)
- - Attack time
- - Decay time
- - Sustain level
- - Release time
- - destination (Oscillator baseFrequency, modulatingMultiplier, Filter frequency [default], Voice LFO frequency, Voice LFO mod amount)
- - amount (unipolar modulation, so positive and negative amount)
-
- c) Voice LFO (should exist per-voice)
- - waveform (sine, triangle, square, sawtooth, reversed sawtooth)
- - reset mode (free, trigger, sync)
- - frequency (0-10 Hz or tempo multipliers depending on mode)
- - destination (Oscillator baseFrequency [default], modulationIndex, modulatingMultiplier, Filter frequency, stereo spread offset amount)
- - amount (bipolar modulation, so only positive amounts)
-
- d) Global LFO (should exist as a single LFO on global level
- - waveform (sine, triangle, square, sawtooth, reversed sawtooth)
- - reset mode (free, sync)
- - frequency (0-10 Hz or tempo multipliers depending on mode)
- - destination (Oscillator amplitude [default], Oscillator baseFrequency, modulationIndex, modulatingMultiplier, Filter frequency, delay time, delay amount)
- - amount (bipolar modulation, so only positive amounts)
- 
- e) Key tracking (value proportional to frequency of triggered key)
-  - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
-  - amount (unipolar modulation, so positive and negative amount)
-
- e) X initial touch (x position of key trigger touch)
- - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- - amount (unipolar modulation, so positive and negative amount)
- 
- f) X aftertouch (change in x position of touch while key is being held)
- - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- - amount (bipolar modulation, so only positive amounts)
- ? toggle for relative/absolute mode
- 
- 
- 
- >>> the modulation sources below, y touch sensitivity and touchArea detection will not be implemented in this particular app, but it would be good to add them to the synth engine for purposes of portability / reusability)
- 
- g) Y initial touch (y position of key trigger touch)
- - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- - amount (unipolar modulation, so positive and negative amount)
- 
- h) Y aftertouch (change in y position of touch while key is being held)
- - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- - amount (bipolar modulation, so only positive amounts)
- ? toggle for relative/absolute mode
- 
- i) Velocity sensitivity through 'touchArea' detection
- - destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- - amount (unipolar modulation, so positive and negative amount)
-
- 
- 
- PARAMETER PAGE VIEWS
- 
  √ PAGE 1 - VOICE OSCILLATORS
- 1) Oscillator Waveform. LIST. Values: sine, triangle, square
- 2) Carrier multiplier. SLIDER. Values: integers only, range 1-16
- 3) Modulator multiplier coarse. SLIDER. Values: integers only, range 1-16
- 4) Modulator multiplier fine. SLIDER. Values: 0-1 continuous
- 5) Modulator base level. SLIDER. Values: 0-1 continuous
- 6) Stereo offset mode. LIST. Values: constant, proportional
- 7) Stereo offset amount. SLIDER. Values: 0-4 continuous for constant offset mode, 1.0000-1.0100 continuous for proportional offset mode
+ 1) Oscillator Waveform
+ 2) Carrier multiplier
+ 3) Modulator multiplier coarse
+ 4) Modulator multiplier fine
+ 5) Modulator base level
+ 6) Stereo offset mode
+ 7) Stereo offset amount
  
  √ PAGE 2 - VOICE CONTOUR
- 1) Amp Envelope Attack time. SLIDER. Values: 0-5 continuous
- 2) Amp Envelope Decay time. SLIDER. Values: 0-5 continuous
- 3) Amp Envelope Sustain level. SLIDER. Values: 0-1 continuous
- 4) Amp Envelope Release time. SLIDER. Values: 0-5 continuous
- 5) Lowpass Filter Cutoff frequency. SLIDER. Values: 20 - 20000 continuous << needs logarithmic scaling
- 6) Lowpass Filter Resonance. SLIDER. Values: 0-2 continuous
- 7) Lowpass Filter Saturation. SLIDER. Values: 0-10 continuous
+ 1) Amp Envelope Attack time
+ 2) Amp Envelope Decay time
+ 3) Amp Envelope Sustain level
+ 4) Amp Envelope Release time
+ 5) Lowpass Filter Cutoff frequency
+ 6) Lowpass Filter Resonance
+ 7) Lowpass Filter Saturation
 
  √ PAGE 3 - EFFECTS
- 1) Delay time. LIST. Values: 1/32, 1/24, 1/16, 3/32, 1/8, 3/16, 1/4
- 2) Delay feedback. SLIDER. Values: 0-1 continuous
+ 1) Delay time
+ 2) Delay feedback
  3) Delay PingPong
- 4) Delay mix. SLIDER. Values: 0-1 continuous
- 5) Reverb size. SLIDER. Values: 0-1 continuous
- 6) Reverb tone. SLIDER. Values: 0-1 continuous
- 7) Reverb mix. SLIDER. Values: 0-1 continuous
+ 4) Delay mix
+ 5) Reverb size
+ 6) Reverb tone
+ 7) Reverb mix
  
  √ PAGE 4 - GLOBAL
- 1) Tempo. SLIDER. Values: 30-240, integers only
- 2) Polyphony. SLIDER. Values: 1-12, integers only
- 3) Root frequency. SLIDER. Values: 98-220 continuous
- 4) Root octave. LIST. Values: -2,-1,0,1,2
- 5) Fine tune. SLIDER. Values: 98-220 continuous
- 6) Pre volume (voice mixer volume). SLIDER. Values: 0-1 continuous
- 7) Post volume (output mixer volume). SLIDER. Values: 0-1 continuous
+ 1) Tempo
+ 2) Polyphony
+ 3) Root octave
+ 4) Root offset
+ 5) Fine tune
+ 6) Pre volume
+ 7) Post volume
   
  PAGE 5 - MODULATOR ENVELOPE  + KEYBOARD TRACKING
- 1) Mod Envelope Attack time. SLIDER. Values: 0-5 continuous
- 2) Mod Envelope Decay time. SLIDER. Values: 0-5 continuous
- 3) Mod Envelope Sustain level. SLIDER. Values: 0-1 continuous
- 4) Mod Envelope Release time. SLIDER. Values: 0-5 continuous
- 5) Mod Envelope amount (=> modulationIndex + Modulation envelope value * envelope amount)
- 6) Key tracking destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- 7) Key tracking amount (unipolar modulation, so positive and negative amount)
+ 1) Mod Envelope Attack time
+ 2) Mod Envelope Decay time
+ 3) Mod Envelope Sustain level
+ 4) Mod Envelope Release time
+ 5) Mod Envelope amount
+ 6) Key track to filter frequency amount
+ 7) Key track to voice lfo frequency amount
  
  PAGE 6 - AUXILIARY ENVELOPE
- 1) Aux envelope Attack time. SLIDER. Values: 0-5 continuous
- 2) Aux envelope Decay time. SLIDER. Values: 0-5 continuous
- 3) Aux envelope Sustain level. SLIDER. Values: 0-1 continuous
- 4) Aux envelope Release time. SLIDER. Values: 0-5 continuous
- 5) Aux envelope destination (Oscillator baseFrequency, modulatingMultiplier, Filter frequency [default], Voice LFO frequency, Voice LFO mod amount)
- 6) Aux envelope amount (unipolar modulation, so positive and negative amount)
+ 1) Aux envelope Attack time
+ 2) Aux envelope Decay time
+ 3) Aux envelope Sustain level
+ 4) Aux envelope Release time
+ 5) Aux envelope to oscillator pitch amount
+ 6) Aux envelope to filter frequency amount
+ 7) Aux envelope to vibrato (voice lfo >> oscillator pitch) amount
 
  PAGE 7 - VOICE LFO
- 1) Voice LFO waveform (sine, triangle, square, sawtooth, reversed sawtooth)
- 2) Voice LFO reset mode (free, trigger, sync)
- 3) Voice LFO frequency (0-10 Hz or tempo multipliers depending on mode)
- 4) Voice LFO destination (Oscillator baseFrequency [default], modulationIndex, modulatingMultiplier, Filter frequency, stereo spread offset amount)
- 5) Voice LFO amount (bipolar modulation, so only positive amounts)
-
+ 1) Voice LFO waveform
+ 2) Voice LFO reset mode
+ 3) Voice LFO frequency
+ 4) Voice LFO to oscillator pitch amount
+ 5) Voice LFO to filter frequency amount
+ 6) Voice LFO to modulator level amount
+ 7) -
+ 
  PAGE 8 - GLOBAL LFO
- 1) Global LFO waveform (sine, triangle, square, sawtooth, reversed sawtooth)
- 2) Global LFO reset mode (free, sync)
- 3) Global LFO frequency (0-10 Hz or tempo multipliers depending on mode)
- 4) Global LFO destination (Oscillator amplitude [default], Oscillator baseFrequency, modulationIndex, modulatingMultiplier, Filter frequency, delay time, delay amount)
- 5) Global LFO amount (bipolar modulation, so only positive amounts)
+ 1) Global LFO waveform
+ 2) Global LFO reset mode
+ 3) Global LFO frequency
+ 4) Global LFO to oscillator amplitude amount
+ 5) Global LFO to filter frequency amount
+ 6) Global LFO to delay time amount
+ 7) -
  
  PAGE 9 - TOUCH RESPONSE
- 1) Initial touch destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- 2) Initial touch amount (unipolar modulation, so positive and negative amount)
+ 1) Initial touch to oscillator amplitude amount
+ 2) Initial touch to filter frequency amount
  3) Aftertouch mode (relative/absolute)
- 4) Aftertouch scaling (linear/logarithmic)
- 5) Aftertouch destination (Oscillator amplitude, modulationIndex, modulatingMultiplier, Filter frequency, Voice LFO frequency, Voice LFO mod amount)
- 6) Aftertouch amount (bipolar modulation, so only positive amounts)
-
+ 4) Aftertouch to filter frequency amount
+ 5) Aftertouch to vibrato (voice lfo >> oscillator pitch) amount
+ 6) -
+ 7) -
+ 
  PAGE 10 - PRESETS
  - Select and store presets
  
@@ -386,77 +276,6 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  4) Delay Mix maximum
  5) Reverb mix minimum
  6) Reverb mix maximum
-  
- 
- 
- 
- 
- 
- 
- 
- 
- 
-Aux envelope destinations:
- √ Oscillator baseFrequency
- X modulatingMultiplier
- √ Filter frequency [default]
- ? Voice LFO frequency
- ? Voice LFO mod amount
- 
- Voice LFO destinations:
- √ Oscillator baseFrequency [default]
- ? modulationIndex
- X modulatingMultiplier
- √ Filter frequency
- X stereo spread offset amount
- 
- Global LFO destinations:
- √ Oscillator amplitude [default]
- - Oscillator baseFrequency
- - modulationIndex
- - modulatingMultiplier
- - Filter frequency
- - delay time
- - delay amount
-
- Initial touch destinations:
- √ Oscillator amplitude
- - modulationIndex
- - modulatingMultiplier
- - Filter frequency
- - Voice LFO frequency
- - Voice LFO mod amount
-
- Aftertouch destinations:
- - Oscillator amplitude
- - modulationIndex
- - modulatingMultiplier
- √ Filter frequency
- - Voice LFO frequency
- - Voice LFO mod amount
- 
- 
- 
- 
- 
- Aux envelope destinations:
-  √ Oscillator baseFrequency
-  √ Filter frequency [default]
-  
-  Voice LFO destinations:
-  √ Oscillator baseFrequency [default]
-  √ Filter frequency
-  
-  Global LFO destinations:
-  √ Oscillator amplitude [default]
-
-  Initial touch destinations:
-  √ Oscillator amplitude
- 
-  Aftertouch destinations:
-  √ Filter frequency
- 
- 
  
  
  */
