@@ -447,124 +447,69 @@ final class PolyphonicVoice {
         // It continues tracking from current position
     }
     
-    // MARK: - Modulation Application (Phase 5B)
+    // MARK: - Modulation Application (Refactored - Fixed Destinations)
     
-    /// Applies modulation from envelopes and LFOs (Phase 5B + 5C)
+    /// Applies modulation from all sources with fixed destinations
     /// This method is called from the control-rate timer (200 Hz)
     /// - Parameters:
-    ///   - globalLFOValue: Current value from global LFO (Phase 5C)
-    ///   - globalLFODestination: Destination for global LFO modulation
+    ///   - globalLFO: Global LFO parameters with raw value
     ///   - deltaTime: Time since last update (typically 0.005 seconds at 200 Hz)
-    ///   - currentTempo: Current tempo in BPM for tempo sync (Phase 5C)
+    ///   - currentTempo: Current tempo in BPM for tempo sync
     func applyModulation(
-        globalLFOValue: Double,
-        globalLFODestination: ModulationDestination,
+        globalLFO: (rawValue: Double, parameters: GlobalLFOParameters),
         deltaTime: Double,
         currentTempo: Double = 120.0
     ) {
-        // FIRST: Apply base values from touch control (always, even if no modulation)
-        // This ensures touch gestures update smoothly at 200 Hz
-        // Use zero-duration ramps to avoid AudioKit parameter ramping artifacts
-        // NOTE: Only apply base values if touch modulation is NOT handling them
-        if !voiceModulation.touchInitial.isEnabled || voiceModulation.touchInitial.destination != .oscillatorAmplitude {
-            // Touch modulation not controlling amplitude - apply base value
-            oscLeft.$amplitude.ramp(to: AUValue(modulationState.baseAmplitude), duration: 0)
-            oscRight.$amplitude.ramp(to: AUValue(modulationState.baseAmplitude), duration: 0)
-        }
-        
-        if !voiceModulation.touchAftertouch.isEnabled || voiceModulation.touchAftertouch.destination != .filterCutoff {
-            // Touch modulation not controlling filter - apply base value
-            filter.$cutoffFrequency.ramp(to: AUValue(modulationState.baseFilterCutoff), duration: 0)
-        }
-        
         // Update envelope times
         modulationState.modulatorEnvelopeTime += deltaTime
         modulationState.auxiliaryEnvelopeTime += deltaTime
         
-        // Update voice LFO phase (Phase 5C)
+        // Update voice LFO phase and delay ramp
         updateVoiceLFOPhase(deltaTime: deltaTime, tempo: currentTempo)
+        modulationState.updateVoiceLFODelayRamp(
+            deltaTime: deltaTime,
+            delayTime: voiceModulation.voiceLFO.delayTime
+        )
         
-        // Calculate envelope values
-        let modulatorValue: Double
-        let auxiliaryValue: Double
+        // Calculate envelope values using ModulationRouter
+        let modulatorEnvValue = ModulationRouter.calculateEnvelopeValue(
+            time: modulationState.modulatorEnvelopeTime,
+            isGateOpen: modulationState.isGateOpen,
+            attack: voiceModulation.modulatorEnvelope.attack,
+            decay: voiceModulation.modulatorEnvelope.decay,
+            sustain: voiceModulation.modulatorEnvelope.sustain,
+            release: voiceModulation.modulatorEnvelope.release,
+            capturedLevel: modulationState.modulatorSustainLevel
+        )
         
-        if modulationState.isGateOpen {
-            // Gate open: use normal envelope calculation
-            modulatorValue = voiceModulation.modulatorEnvelope.currentValue(
-                timeInEnvelope: modulationState.modulatorEnvelopeTime,
-                isGateOpen: true
-            )
-            
-            auxiliaryValue = voiceModulation.auxiliaryEnvelope.currentValue(
-                timeInEnvelope: modulationState.auxiliaryEnvelopeTime,
-                isGateOpen: true
-            )
-        } else {
-            // Gate closed: use release calculation from captured level
-            modulatorValue = voiceModulation.modulatorEnvelope.releaseValue(
-                timeInRelease: modulationState.modulatorEnvelopeTime,
-                fromLevel: modulationState.modulatorSustainLevel
-            )
-            
-            auxiliaryValue = voiceModulation.auxiliaryEnvelope.releaseValue(
-                timeInRelease: modulationState.auxiliaryEnvelopeTime,
-                fromLevel: modulationState.auxiliarySustainLevel
-            )
-        }
+        let auxiliaryEnvValue = ModulationRouter.calculateEnvelopeValue(
+            time: modulationState.auxiliaryEnvelopeTime,
+            isGateOpen: modulationState.isGateOpen,
+            attack: voiceModulation.auxiliaryEnvelope.attack,
+            decay: voiceModulation.auxiliaryEnvelope.decay,
+            sustain: voiceModulation.auxiliaryEnvelope.sustain,
+            release: voiceModulation.auxiliaryEnvelope.release,
+            capturedLevel: modulationState.auxiliarySustainLevel
+        )
         
-        // Calculate voice LFO value (Phase 5C)
-        let voiceLFOValue = voiceModulation.voiceLFO.currentValue(phase: modulationState.voiceLFOPhase)
+        // Get raw voice LFO value
+        let voiceLFORawValue = voiceModulation.voiceLFO.rawValue(at: modulationState.voiceLFOPhase)
         
-        // Apply modulator envelope to modulationIndex (hardwired)
-        if voiceModulation.modulatorEnvelope.isEnabled {
-            // Use the base modulation index from modulation state
-            let baseModIndex = modulationState.baseModulationIndex
-            
-            let modulatedIndex = ModulationRouter.applyEnvelopeModulation(
-                baseValue: baseModIndex,
-                envelopeValue: modulatorValue,
-                amount: voiceModulation.modulatorEnvelope.amount,
-                destination: .modulationIndex
-            )
-            
-            // Apply to both oscillators (stereo voice)
-            // Use zero-duration ramps to avoid AudioKit parameter ramping artifacts
-            oscLeft.$modulationIndex.ramp(to: AUValue(modulatedIndex), duration: 0)
-            oscRight.$modulationIndex.ramp(to: AUValue(modulatedIndex), duration: 0)
-        } else {
-            // Modulator envelope disabled - apply base value
-            oscLeft.$modulationIndex.ramp(to: AUValue(modulationState.baseModulationIndex), duration: 0)
-            oscRight.$modulationIndex.ramp(to: AUValue(modulationState.baseModulationIndex), duration: 0)
-        }
+        // Get key tracking value
+        let keyTrackValue = voiceModulation.keyTracking.trackingValue(
+            forFrequency: modulationState.currentFrequency
+        )
         
-        // Apply auxiliary envelope to its routed destination
-        if voiceModulation.auxiliaryEnvelope.isEnabled {
-            applyAuxiliaryEnvelope(value: auxiliaryValue)
-        }
+        // Get aftertouch delta (bipolar: -1 to +1)
+        let aftertouchDelta = modulationState.currentTouchX - modulationState.initialTouchX
         
-        // Phase 5C: Apply voice LFO modulation
-        if voiceModulation.voiceLFO.isEnabled {
-            applyVoiceLFO(value: voiceLFOValue)
-        }
-        
-        // Phase 5C: Apply global LFO modulation (passed from VoicePool)
-        if globalLFOValue != 0.0 {
-            applyGlobalLFO(value: globalLFOValue, destination: globalLFODestination)
-        }
-        
-        // Phase 5D: Touch modulation
-        // NOTE: Initial touch is now applied at trigger time in MainKeyboardView
-        // Only aftertouch runs here at control rate
-        
-        // Apply aftertouch on every frame (it changes continuously)
-        if voiceModulation.touchAftertouch.isEnabled {
-            applyTouchAftertouch()
-        }
-        
-        // Phase 5D: Key tracking modulation
-        if voiceModulation.keyTracking.isEnabled {
-            applyKeyTracking()
-        }
+        // Apply all modulations to their destinations
+        applyModulatorEnvelope(envValue: modulatorEnvValue)
+        applyAuxiliaryEnvelope(envValue: auxiliaryEnvValue)
+        applyVoiceLFO(rawValue: voiceLFORawValue)
+        applyGlobalLFO(rawValue: globalLFO.rawValue, parameters: globalLFO.parameters)
+        applyKeyTracking(trackingValue: keyTrackValue)
+        applyTouchAftertouch(aftertouchDelta: aftertouchDelta)
     }
     
     // MARK: - Voice LFO Phase Update (Phase 5C)
@@ -617,254 +562,244 @@ final class PolyphonicVoice {
         }
     }
     
-    /// Applies the auxiliary envelope to its routed destination
-    private func applyAuxiliaryEnvelope(value: Double) {
-        let destination = voiceModulation.auxiliaryEnvelope.destination
-        let amount = voiceModulation.auxiliaryEnvelope.amount
+    // MARK: - Individual Modulation Application Methods
+    
+    /// Applies modulator envelope (fixed destination: modulation index)
+    private func applyModulatorEnvelope(envValue: Double) {
+        // Early exit if no modulation
+        guard voiceModulation.modulatorEnvelope.hasActiveDestinations else { return }
         
-        // Only apply to voice-level destinations
-        guard destination.isVoiceLevel else { return }
-        
-        // Get base value
-        let baseValue = getBaseValue(for: destination)
-        
-        // Calculate modulated value
-        let modulated = ModulationRouter.applyEnvelopeModulation(
-            baseValue: baseValue,
-            envelopeValue: value,
-            amount: amount,
-            destination: destination
+        let finalModIndex = ModulationRouter.calculateModulationIndex(
+            baseModIndex: modulationState.baseModulationIndex,
+            modEnvValue: envValue,
+            modEnvAmount: voiceModulation.modulatorEnvelope.amountToModulationIndex,
+            voiceLFOValue: 0.0,  // Applied separately
+            voiceLFOAmount: 0.0,
+            voiceLFORampFactor: 0.0,
+            aftertouchDelta: 0.0,  // Applied separately
+            aftertouchAmount: 0.0
         )
         
-        // Apply using centralized method (with zero-duration ramps)
-        applyModulatedValue(modulated, to: destination)
+        oscLeft.$modulationIndex.ramp(to: AUValue(finalModIndex), duration: 0)
+        oscRight.$modulationIndex.ramp(to: AUValue(finalModIndex), duration: 0)
     }
     
-    // MARK: - Voice LFO Application (Phase 5C)
-    
-    /// Applies the voice LFO to its routed destination
-    /// Voice LFO provides per-voice modulation (each voice has independent phase)
-    private func applyVoiceLFO(value: Double) {
-        let destination = voiceModulation.voiceLFO.destination
+    /// Applies auxiliary envelope (3 fixed destinations: pitch, filter, vibrato)
+    private func applyAuxiliaryEnvelope(envValue: Double) {
+        // Early exit if no modulation
+        guard voiceModulation.auxiliaryEnvelope.hasActiveDestinations else { return }
         
-        // Only apply to voice-level destinations
-        guard destination.isVoiceLevel else { return }
+        let params = voiceModulation.auxiliaryEnvelope
         
-        // Get base value
-        let baseValue = getBaseValue(for: destination)
-        
-        // Apply LFO modulation
-        let modulated = ModulationRouter.applyLFOModulation(
-            baseValue: baseValue,
-            lfoValue: value,
-            destination: destination
-        )
-        
-        // Apply using centralized method (with zero-duration ramps)
-        applyModulatedValue(modulated, to: destination)
-    }
-    
-    // MARK: - Global LFO Application (Phase 5C)
-    
-    /// Applies the global LFO to its routed destination
-    /// Global LFO is calculated in VoicePool and passed to all voices
-    /// This enables synchronized modulation across all voices
-    /// - Parameters:
-    ///   - value: The current global LFO value (-1.0 to +1.0, scaled by amount)
-    ///   - destination: The destination parameter to modulate
-    private func applyGlobalLFO(value: Double, destination: ModulationDestination) {
-        // Only apply to voice-level destinations
-        // (Global-level destinations are handled by VoicePool directly)
-        guard destination.isVoiceLevel else { return }
-        
-        // Get base value
-        let baseValue = getBaseValue(for: destination)
-        
-        // Apply LFO modulation
-        let modulated = ModulationRouter.applyLFOModulation(
-            baseValue: baseValue,
-            lfoValue: value,
-            destination: destination
-        )
-        
-        // Apply using centralized method (with zero-duration ramps)
-        applyModulatedValue(modulated, to: destination)
-    }
-    
-    // MARK: - Touch Modulation (Phase 5D)
-    
-    // NOTE: Initial touch is now applied at trigger time in MainKeyboardView
-    // This provides zero-latency response for note-on attributes
-    
-    /// Applies aftertouch X movement as a modulation source
-    /// Aftertouch tracks the change in X position while key is held
-    /// This provides bipolar modulation (oscillates around center)
-    private func applyTouchAftertouch() {
-        let params = voiceModulation.touchAftertouch
-        let destination = params.destination
-        
-        // Only apply to voice-level destinations
-        guard destination.isVoiceLevel else { return }
-        
-        // Calculate aftertouch delta from initial position
-        // This gives us a bipolar value: negative = moved left, positive = moved right
-        let initialX = modulationState.initialTouchX
-        let currentX = modulationState.currentTouchX
-        let aftertouchDelta = currentX - initialX  // Range: -1.0 to +1.0
-        
-        // Scale the delta by the amount parameter
-        let scaledValue = aftertouchDelta * params.amount
-        
-        // Get the base value for the destination
-        let baseValue = getBaseValue(for: destination)
-        
-        // Apply aftertouch modulation using LFO logic (bipolar)
-        let targetValue = ModulationRouter.applyLFOModulation(
-            baseValue: baseValue,
-            lfoValue: scaledValue,
-            destination: destination
-        )
-        
-        // Apply smoothing for filter cutoff destination
-        let finalValue: Double
-        if destination == .filterCutoff {
-            // Get current smoothed value
-            let currentValue = modulationState.lastSmoothedFilterCutoff ?? targetValue
-            
-            // Apply linear interpolation (lerp)
-            let smoothingFactor = modulationState.filterSmoothingFactor
-            let interpolationAmount = 1.0 - smoothingFactor
-            finalValue = currentValue + (targetValue - currentValue) * interpolationAmount
-            
-            // Store for next iteration
-            modulationState.lastSmoothedFilterCutoff = finalValue
-        } else {
-            // No smoothing for other destinations
-            finalValue = targetValue
-        }
-        
-        // Apply the modulated value
-        applyModulatedValue(finalValue, to: destination)
-    }
-    
-    /// Applies key tracking (frequency-based modulation)
-    /// Higher notes produce higher modulation values
-    private func applyKeyTracking() {
-        let params = voiceModulation.keyTracking
-        let destination = params.destination
-        
-        // Only apply to voice-level destinations
-        guard destination.isVoiceLevel else { return }
-        
-        // Calculate tracking value from current frequency
-        let trackingValue = params.trackingValue(forFrequency: modulationState.currentFrequency)
-        
-        // Get the base value for the destination
-        let baseValue = getBaseValue(for: destination)
-        
-        // Apply key tracking using envelope modulation logic (unipolar)
-        let modulated = ModulationRouter.applyEnvelopeModulation(
-            baseValue: baseValue,
-            envelopeValue: trackingValue,
-            amount: params.amount,
-            destination: destination
-        )
-        
-        // Apply the modulated value
-        applyModulatedValue(modulated, to: destination)
-    }
-    
-    // MARK: - Touch Modulation Helpers
-    
-    /// Gets the base value for a modulation destination
-    /// Uses user-controlled values for amplitude/filter, current values for others
-    private func getBaseValue(for destination: ModulationDestination) -> Double {
-        switch destination {
-        case .modulationIndex:
-            // Use user-controlled base value from modulation state
-            return modulationState.baseModulationIndex
-            
-        case .filterCutoff:
-            // Use user-controlled base value from modulation state
-            return modulationState.baseFilterCutoff
-            
-        case .oscillatorAmplitude:
-            // Use user-controlled base value from modulation state
-            return modulationState.baseAmplitude
-            
-        case .oscillatorBaseFrequency:
-            // Use user-controlled base value from modulation state
-            return modulationState.baseFrequency
-            
-        case .modulatingMultiplier:
-            return Double(oscLeft.modulatingMultiplier)
-            
-        case .stereoSpreadAmount:
-            return detuneMode == .proportional ? frequencyOffsetRatio : frequencyOffsetHz
-            
-        case .voiceLFOFrequency:
-            return voiceModulation.voiceLFO.frequency
-            
-        case .voiceLFOAmount:
-            return voiceModulation.voiceLFO.amount
-            
-        case .delayTime, .delayMix:
-            // These are global-level, shouldn't be reached
-            return 0.0
-        }
-    }
-    
-    /// Applies a modulated value to a destination parameter
-    private func applyModulatedValue(_ value: Double, to destination: ModulationDestination) {
-        // Validate value is not NaN or infinite
-        guard value.isFinite else {
-            print("⚠️ Invalid modulation value: \(value) for destination \(destination)")
-            return
-        }
-        
-        switch destination {
-        case .modulationIndex:
-            let clamped = max(0.0, min(10.0, value))
-            oscLeft.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
-            oscRight.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
-            
-        case .filterCutoff:
-            // Clamp to safe range for AudioKit (20 Hz - 20 kHz)
-            let clamped = max(20.0, min(20000.0, value))
-            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
-            
-        case .oscillatorAmplitude:
-            let clamped = max(0.0, min(1.0, value))
-            oscLeft.$amplitude.ramp(to: AUValue(clamped), duration: 0)
-            oscRight.$amplitude.ramp(to: AUValue(clamped), duration: 0)
-            
-        case .oscillatorBaseFrequency:
-            currentFrequency = value
+        // Destination 1: Oscillator pitch
+        if params.amountToOscillatorPitch != 0.0 {
+            let finalFreq = ModulationRouter.calculateOscillatorPitch(
+                baseFrequency: modulationState.baseFrequency,
+                auxEnvValue: envValue,
+                auxEnvAmount: params.amountToOscillatorPitch,
+                voiceLFOValue: 0.0,  // Applied separately
+                voiceLFOAmount: 0.0,
+                voiceLFORampFactor: 0.0
+            )
+            currentFrequency = finalFreq
             updateOscillatorFrequencies()
+        }
+        
+        // Destination 2: Filter frequency
+        if params.amountToFilterFrequency != 0.0 {
+            // Note: Full filter calculation happens in a combined method
+            // This is a simplified version for aux env only
+            let auxEnvOctaves = envValue * params.amountToFilterFrequency
+            let finalCutoff = modulationState.baseFilterCutoff * pow(2.0, auxEnvOctaves)
+            let clamped = max(20.0, min(22050.0, finalCutoff))
+            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 3: Vibrato (meta-modulation of voice LFO pitch amount)
+        // This is handled by modifying the voice LFO amount in real-time
+        // Will be applied when voice LFO is calculated
+    }
+    
+    /// Applies voice LFO (3 fixed destinations + delay ramp: pitch, filter, modulator level)
+    private func applyVoiceLFO(rawValue: Double) {
+        // Early exit if no modulation
+        guard voiceModulation.voiceLFO.hasActiveDestinations else { return }
+        
+        let params = voiceModulation.voiceLFO
+        let rampFactor = modulationState.voiceLFORampFactor
+        
+        // Destination 1: Oscillator pitch (vibrato)
+        if params.amountToOscillatorPitch != 0.0 {
+            // Calculate effective amount (may be modulated by aux env or aftertouch)
+            var effectiveAmount = params.amountToOscillatorPitch
             
-        case .modulatingMultiplier:
-            let clamped = max(0.1, min(20.0, value))
-            oscLeft.$modulatingMultiplier.ramp(to: AUValue(clamped), duration: 0)
-            oscRight.$modulatingMultiplier.ramp(to: AUValue(clamped), duration: 0)
-            
-        case .stereoSpreadAmount:
-            if detuneMode == .proportional {
-                frequencyOffsetRatio = value
-            } else {
-                frequencyOffsetHz = value
+            // Meta-modulation from aux envelope
+            if voiceModulation.auxiliaryEnvelope.amountToVibrato != 0.0 {
+                let auxEnvValue = ModulationRouter.calculateEnvelopeValue(
+                    time: modulationState.auxiliaryEnvelopeTime,
+                    isGateOpen: modulationState.isGateOpen,
+                    attack: voiceModulation.auxiliaryEnvelope.attack,
+                    decay: voiceModulation.auxiliaryEnvelope.decay,
+                    sustain: voiceModulation.auxiliaryEnvelope.sustain,
+                    release: voiceModulation.auxiliaryEnvelope.release,
+                    capturedLevel: modulationState.auxiliarySustainLevel
+                )
+                effectiveAmount = ModulationRouter.calculateVoiceLFOPitchAmount(
+                    baseAmount: effectiveAmount,
+                    auxEnvValue: auxEnvValue,
+                    auxEnvAmount: voiceModulation.auxiliaryEnvelope.amountToVibrato,
+                    aftertouchDelta: 0.0,  // Applied separately below
+                    aftertouchAmount: 0.0
+                )
             }
             
-        case .voiceLFOFrequency:
-            // Modulate the voice LFO frequency
-            voiceModulation.voiceLFO.frequency = max(0.01, min(10.0, value))
+            // Meta-modulation from aftertouch
+            if voiceModulation.touchAftertouch.amountToVibrato != 0.0 {
+                let aftertouchDelta = modulationState.currentTouchX - modulationState.initialTouchX
+                effectiveAmount = ModulationRouter.calculateVoiceLFOPitchAmount(
+                    baseAmount: effectiveAmount,
+                    auxEnvValue: 0.0,
+                    auxEnvAmount: 0.0,
+                    aftertouchDelta: aftertouchDelta,
+                    aftertouchAmount: voiceModulation.touchAftertouch.amountToVibrato
+                )
+            }
             
-        case .voiceLFOAmount:
-            // Modulate the voice LFO amount
-            voiceModulation.voiceLFO.amount = max(0.0, min(1.0, value))
-            
-        case .delayTime, .delayMix:
-            // These are global-level, handled elsewhere
-            break
+            let finalFreq = ModulationRouter.calculateOscillatorPitch(
+                baseFrequency: modulationState.baseFrequency,
+                auxEnvValue: 0.0,  // Applied separately
+                auxEnvAmount: 0.0,
+                voiceLFOValue: rawValue,
+                voiceLFOAmount: effectiveAmount,
+                voiceLFORampFactor: rampFactor
+            )
+            currentFrequency = finalFreq
+            updateOscillatorFrequencies()
         }
+        
+        // Destination 2: Filter frequency
+        if params.amountToFilterFrequency != 0.0 {
+            let lfoOctaves = (rawValue * rampFactor) * params.amountToFilterFrequency
+            let finalCutoff = modulationState.baseFilterCutoff * pow(2.0, lfoOctaves)
+            let clamped = max(20.0, min(22050.0, finalCutoff))
+            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 3: Modulation index
+        if params.amountToModulatorLevel != 0.0 {
+            let lfoOffset = (rawValue * rampFactor) * params.amountToModulatorLevel
+            let finalModIndex = modulationState.baseModulationIndex + lfoOffset
+            let clamped = max(0.0, min(10.0, finalModIndex))
+            oscLeft.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
+            oscRight.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
+        }
+    }
+    
+    /// Applies global LFO (4 fixed destinations: amplitude, modulator multiplier, filter, delay time)
+    private func applyGlobalLFO(rawValue: Double, parameters: GlobalLFOParameters) {
+        // Early exit if no modulation
+        guard parameters.hasActiveDestinations else { return }
+        
+        // Destination 1: Oscillator amplitude (tremolo)
+        if parameters.amountToOscillatorAmplitude != 0.0 {
+            let finalAmp = ModulationRouter.calculateOscillatorAmplitude(
+                baseAmplitude: modulationState.baseAmplitude,
+                initialTouchValue: 1.0,  // Already applied at trigger
+                initialTouchAmount: 0.0,
+                globalLFOValue: rawValue,
+                globalLFOAmount: parameters.amountToOscillatorAmplitude
+            )
+            oscLeft.$amplitude.ramp(to: AUValue(finalAmp), duration: 0)
+            oscRight.$amplitude.ramp(to: AUValue(finalAmp), duration: 0)
+        }
+        
+        // Destination 2: Modulator multiplier (FM ratio modulation)
+        if parameters.amountToModulatorMultiplier != 0.0 {
+            let baseMultiplier = Double(oscLeft.modulatingMultiplier)
+            let finalMultiplier = ModulationRouter.calculateModulatorMultiplier(
+                baseMultiplier: baseMultiplier,
+                globalLFOValue: rawValue,
+                globalLFOAmount: parameters.amountToModulatorMultiplier
+            )
+            oscLeft.$modulatingMultiplier.ramp(to: AUValue(finalMultiplier), duration: 0)
+            oscRight.$modulatingMultiplier.ramp(to: AUValue(finalMultiplier), duration: 0)
+        }
+        
+        // Destination 3: Filter frequency
+        if parameters.amountToFilterFrequency != 0.0 {
+            let globalLFOOctaves = rawValue * parameters.amountToFilterFrequency
+            let finalCutoff = modulationState.baseFilterCutoff * pow(2.0, globalLFOOctaves)
+            let clamped = max(20.0, min(22050.0, finalCutoff))
+            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 4: Delay time (handled by VoicePool, not voice-level)
+        // This is included here for completeness but won't execute at voice level
+    }
+    
+    /// Applies key tracking (2 fixed destinations: filter frequency, voice LFO frequency)
+    private func applyKeyTracking(trackingValue: Double) {
+        // Early exit if no modulation
+        guard voiceModulation.keyTracking.hasActiveDestinations else { return }
+        
+        let params = voiceModulation.keyTracking
+        
+        // Destination 1: Filter frequency (scales envelope/aftertouch modulation)
+        if params.amountToFilterFrequency != 0.0 {
+            // This is part of the complex filter frequency calculation
+            // The full calculation is done in a combined method
+            // For now, apply a simple scaling
+            let keyTrackFactor = 1.0 + (trackingValue * params.amountToFilterFrequency)
+            let finalCutoff = modulationState.baseFilterCutoff * keyTrackFactor
+            let clamped = max(20.0, min(22050.0, finalCutoff))
+            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 2: Voice LFO frequency
+        if params.amountToVoiceLFOFrequency != 0.0 {
+            let finalFreq = ModulationRouter.calculateVoiceLFOFrequency(
+                baseFrequency: voiceModulation.voiceLFO.frequency,
+                keyTrackValue: trackingValue,
+                keyTrackAmount: params.amountToVoiceLFOFrequency
+            )
+            // Update the voice LFO frequency for next cycle
+            voiceModulation.voiceLFO.frequency = finalFreq
+        }
+    }
+    
+    /// Applies touch aftertouch (3 fixed destinations: filter, modulator level, vibrato)
+    private func applyTouchAftertouch(aftertouchDelta: Double) {
+        // Early exit if no modulation
+        guard voiceModulation.touchAftertouch.hasActiveDestinations else { return }
+        
+        let params = voiceModulation.touchAftertouch
+        
+        // Destination 1: Filter frequency
+        if params.amountToFilterFrequency != 0.0 {
+            let aftertouchOctaves = aftertouchDelta * params.amountToFilterFrequency
+            let targetCutoff = modulationState.baseFilterCutoff * pow(2.0, aftertouchOctaves)
+            
+            // Apply smoothing
+            let currentValue = modulationState.lastSmoothedFilterCutoff ?? targetCutoff
+            let smoothingFactor = modulationState.filterSmoothingFactor
+            let interpolationAmount = 1.0 - smoothingFactor
+            let finalCutoff = currentValue + (targetCutoff - currentValue) * interpolationAmount
+            modulationState.lastSmoothedFilterCutoff = finalCutoff
+            
+            let clamped = max(20.0, min(22050.0, finalCutoff))
+            filter.$cutoffFrequency.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 2: Modulation index
+        if params.amountToModulatorLevel != 0.0 {
+            let aftertouchOffset = aftertouchDelta * params.amountToModulatorLevel
+            let finalModIndex = modulationState.baseModulationIndex + aftertouchOffset
+            let clamped = max(0.0, min(10.0, finalModIndex))
+            oscLeft.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
+            oscRight.$modulationIndex.ramp(to: AUValue(clamped), duration: 0)
+        }
+        
+        // Destination 3: Vibrato (meta-modulation - handled in voice LFO application)
+        // This modulates the voice LFO pitch amount and is applied in applyVoiceLFO()
     }
 }
