@@ -278,77 +278,118 @@ CHECKLIST FOR LATER TROUBLESHOOTING/IMPROVEMENTS
  6) Reverb mix maximum
  
  
- *** MODULATION PRIORITY/ORDER
+
  
- IMPORTANT CONSIDERATION:
- Initial touch is a note-on parameter, not a continuous modulator
- 
+ *** MODULATION PRIORITY/ORDER (REVISED by Claude)
+
+ IMPORTANT CONSIDERATIONS:
+ 1) Initial touch is a note-on parameter, not a continuous modulator
+ 2) Envelope amounts can be positive or negative, making envelopes effectively bipolar sources
+ 3) Voice LFO delay is a time-based ramp applied to all voice LFO outputs
+
  Direct modulation destinations:
- 
- 1)  Oscillator pitch (FMOscillator baseFrequency)
-    Possible sources:
-    a) Aux envelope
-    b) Voice LFO
-    APPLICATION: base value SCALED BY [aux envelope value OFFSET BY voice lfo value]
- 
- 2)  Oscillator amplitude (FMOscillator amplitude)
-    Possible sources:
-    a) Global LFO
-    b) Initial touch
-    APPLICATION: base value SCALED BY [initial touch value OFFSET BY global lfo value]
- 
- 3)  Modulator level (FMOscillator modulationIndex)
-    Possible sources:
-    a) Mod envelope
-    b) Voice LFO
-    c) Aftertouch
-    APPLICATION: [base value + mod envelope value + aftertouch value] OFFSET BY voice lfo value
- 
- 4)  Modulator multiplier (FMOscillator modulatingMultiplier)
-    Possible sources:
-    a) Global LFO
-    APPLICATION: base value OFFSET BY global lfo value
- 
- 5)  Filter frequency (KorgLowPassFilter cutoffFrequency)
-    Possible sources:
-    a) key track
-    b) Aux envelope
-    c) Voice LFO
-    d) Global LFO
-    e) Aftertouch
-    APPLICATION: [base value + aux envelope value + aftertouch value] SCALED BY keytrack value OFFSET by [voice lfo value * global lfo value]
- 
- 6)  Delay time (StereoDelay time)
-    Possible sources:
-    a) Global LFO:
-    APPLICATION: base value OFFSET BY global lfo value
- 
- Meta modulation destinations
- 7)  Voice lfo to oscillator pitch amount
-    Possible sources:
-    a) aux envelope
-    b) aftertouch
-    APPLICATION: base value SCALED by aux envelope value OFFSET BY aftertouch value
- 
- 8) Voice lfo frequency
-    Possible sources:
-    a) key track
-    APPLICATION: base value SCALED BY key track value
+
+ 1)  Oscillator pitch (FMOscillator baseFrequency) [LOGARITHMIC]
+    Sources: Aux envelope (bipolar), Voice LFO (bipolar, with delay ramp)
+    APPLICATION:
+      auxEnvSemitones = auxEnvValue × auxEnvAmount  // Can be ±
+      lfoSemitones = (lfoValue × lfoRampFactor) × lfoAmount  // Can be ±
+      totalSemitones = auxEnvSemitones + lfoSemitones
+      finalFreq = baseFreq × 2^(totalSemitones / 12)
+
+ 2)  Oscillator amplitude (FMOscillator amplitude) [LINEAR]
+    Sources: Initial touch (unipolar, at note-on), Global LFO (bipolar)
+    APPLICATION:
+      touchScaledBase = baseAmp × (initialTouchValue × touchAmount)
+      lfoOffset = globalLFOValue × globalLFOAmount  // Can be ±
+      finalAmp = touchScaledBase + lfoOffset
+      clampedAmp = max(0.0, min(1.0, finalAmp))
+
+ 3)  Modulation index (FMOscillator modulationIndex) [LINEAR]
+    Sources: Mod envelope (bipolar), Voice LFO (bipolar, with delay ramp), Aftertouch (bipolar)
+    APPLICATION:
+      modEnvOffset = modEnvValue × modEnvAmount  // Can be ±
+      aftertouchOffset = aftertouchDelta × aftertouchAmount  // Can be ±
+      lfoOffset = (lfoValue × lfoRampFactor) × lfoAmount  // Can be ±
+      finalModIndex = baseModIndex + modEnvOffset + aftertouchOffset + lfoOffset
+      clampedModIndex = max(0.0, min(10.0, finalModIndex))
+
+ 4)  Modulator multiplier (FMOscillator modulatingMultiplier) [LINEAR]
+    Sources: Global LFO (bipolar)
+    APPLICATION:
+      lfoOffset = globalLFOValue × globalLFOAmount  // Can be ±
+      finalMultiplier = baseMultiplier + lfoOffset
+      clampedMultiplier = max(0.1, min(20.0, finalMultiplier))
+
+ 5)  Filter frequency (KorgLowPassFilter cutoffFrequency) [LOGARITHMIC]
+    Sources: Key track (unipolar), Aux env (bipolar), Voice LFO (bipolar, with delay ramp),
+             Global LFO (bipolar), Aftertouch (bipolar)
+    APPLICATION:
+      auxEnvOctaves = auxEnvValue × auxEnvAmount  // Can be ±
+      aftertouchOctaves = aftertouchDelta × aftertouchAmount  // Can be ±
+      keyTrackFactor = 1.0 + (keyTrackValue × keyTrackAmount)
+      scaledOctaves = (auxEnvOctaves + aftertouchOctaves) × keyTrackFactor
+      
+      voiceLFOOctaves = (lfoValue × lfoRampFactor) × lfoAmount  // Can be ±
+      globalLFOOctaves = globalLFOValue × globalLFOAmount  // Can be ±
+      
+      totalOctaves = scaledOctaves + voiceLFOOctaves + globalLFOOctaves
+      finalCutoff = baseCutoff × 2^totalOctaves
+      clampedCutoff = max(20.0, min(22050.0, finalCutoff))
+
+ 6)  Delay time (StereoDelay time) [LINEAR]
+    Sources: Global LFO (bipolar)
+    APPLICATION:
+      lfoOffset = globalLFOValue × globalLFOAmount  // Can be ±
+      finalDelayTime = baseDelayTime + lfoOffset
+      clampedDelayTime = max(0.0, min(2.0, finalDelayTime))
+
+ Meta-modulation destinations [All LINEAR]:
+
+ 7)  Voice LFO to oscillator pitch amount
+    Sources: Aux envelope (bipolar), Aftertouch (bipolar)
+    Note: This modulates the amount used in destination 1 above
+    APPLICATION:
+      auxEnvFactor = 1.0 + (auxEnvValue × auxEnvAmount)  // Can scale up or down
+      aftertouchOffset = aftertouchDelta × aftertouchAmount  // Can be ±
+      finalAmount = (baseAmount × auxEnvFactor) + aftertouchOffset
+      clampedAmount = max(-10.0, min(10.0, finalAmount))  // Reasonable range
+
+ 8)  Voice LFO frequency
+    Sources: Key tracking (unipolar)
+    APPLICATION:
+      keyTrackFactor = 1.0 + (keyTrackValue × keyTrackAmount)
+      finalFreq = baseFreq × keyTrackFactor
+      clampedFreq = max(0.01, min(20.0, finalFreq))
+
+ 9)  Mod envelope amount (applied at note-on)
+    Sources: Initial touch (unipolar)
+    APPLICATION:
+      touchFactor = initialTouchValue × touchAmount  // 0.0 to 1.0
+      finalAmount = baseAmount × (1.0 + touchFactor)  // Scales the envelope amount
+      
+ 10) Aux envelope to oscillator pitch amount (applied at note-on)
+    Sources: Initial touch (unipolar)
+    APPLICATION:
+      touchFactor = initialTouchValue × touchAmount
+      finalAmount = baseAmount × (1.0 + touchFactor)
+
+ 11) Aux envelope to filter frequency amount (applied at note-on)
+    Sources: Initial touch (unipolar)
+    APPLICATION:
+      touchFactor = initialTouchValue × touchAmount
+      finalAmount = baseAmount × (1.0 + touchFactor)
+
+ VOICE LFO DELAY RAMP:
+    Applied to all voice LFO outputs before amounts are applied
+    Formula:
+      if timeInNote < delayTime:
+        rampFactor = timeInNote / delayTime  // Linear ramp 0 to 1
+      else:
+        rampFactor = 1.0  // Full effect
     
- 9)  Mod envelope amount
-    Possible sources:
-    a) initial touch
-    APPLICATION: base value SCALED BY initial touch value
- 
- 10)  Aux envelope to oscillator pitch amount
-    Possible sources:
-    a) initial touch
-    APPLICATION: base value SCALED BY initial touch value
- 
- 11) Aux envelope to filter frequency amount
-    Possible sources:
-    a) initial touch
-    APPLICATION: base value SCALED BY initial touch value
- 
- 
+    Usage:
+      rampedLFOValue = rawLFOValue × rampFactor
+      (Then apply amounts to rampedLFOValue for each destination)
+
  */
