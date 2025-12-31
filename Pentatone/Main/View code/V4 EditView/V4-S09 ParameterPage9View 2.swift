@@ -26,7 +26,7 @@ struct TouchView: View {
         Group {
             // Row 1 - Initial Touch to Oscillator Amplitude (velocity-like control)
             SliderRow(
-                label: "I.T. → OSC AMP",
+                label: "INITIAL TO AMP",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchInitial.amountToOscillatorAmplitude },
                     set: { newValue in
@@ -41,7 +41,7 @@ struct TouchView: View {
             
             // Row 2 - Initial Touch to Mod Envelope Amount (meta-modulation)
             SliderRow(
-                label: "I.T. → MOD ENV",
+                label: "INITIAL TO MOD ENV",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchInitial.amountToModEnvelope },
                     set: { newValue in
@@ -56,7 +56,7 @@ struct TouchView: View {
             
             // Row 3 - Initial Touch to Aux Envelope Pitch Amount (meta-modulation)
             SliderRow(
-                label: "I.T. → AUX ENV PITCH",
+                label: "INITIAL TO PITCH ENV",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchInitial.amountToAuxEnvPitch },
                     set: { newValue in
@@ -71,7 +71,7 @@ struct TouchView: View {
             
             // Row 4 - Initial Touch to Aux Envelope Cutoff Amount (meta-modulation)
             SliderRow(
-                label: "I.T. → AUX ENV FILTER",
+                label: "INITIAL TO FILTER ENV",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchInitial.amountToAuxEnvCutoff },
                     set: { newValue in
@@ -86,7 +86,7 @@ struct TouchView: View {
             
             // Row 5 - Aftertouch to Filter Frequency
             SliderRow(
-                label: "AFTERTOUCH → FILTER",
+                label: "AFTER TO FILTER",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchAftertouch.amountToFilterFrequency },
                     set: { newValue in
@@ -103,7 +103,7 @@ struct TouchView: View {
             
             // Row 6 - Aftertouch to Modulator Level (modulation index)
             SliderRow(
-                label: "AFTERTOUCH → MOD IDX",
+                label: "AFTER TO MOD INDEX",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchAftertouch.amountToModulatorLevel },
                     set: { newValue in
@@ -120,7 +120,7 @@ struct TouchView: View {
             
             // Row 7 - Aftertouch to Vibrato (meta-modulation of voice LFO pitch amount)
             SliderRow(
-                label: "AFTERTOUCH → VIBRATO",
+                label: "AFTER TO VIBRATO",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.touchAftertouch.amountToVibrato },
                     set: { newValue in

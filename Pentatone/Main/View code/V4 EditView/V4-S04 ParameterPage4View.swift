@@ -47,13 +47,30 @@ struct GlobalView: View {
                 ),
                 displayText: { mode in
                     switch mode {
-                    case .monophonic: return "MONO"
-                    case .polyphonic: return "POLY"
+                    case .monophonic: return "Mono"
+                    case .polyphonic: return "Poly"
                     }
                 }
             )
             
-            // Row 5 - Semitone Offset (-7 to +7, integers only)
+            // Row 5 - Octave Offset (-2 to +2, integers only)
+            SliderRow(
+                label: "OCTAVE OFFSET",
+                value: Binding(
+                    get: { Double(paramManager.master.globalPitch.octaveOffset) },
+                    set: { newValue in
+                        paramManager.updateOctaveOffset(Int(round(newValue)))
+                    }
+                ),
+                range: -2...2,
+                step: 1.0,
+                displayFormatter: { value in
+                    let octaves = Int(round(value))
+                    return octaves > 0 ? "+\(octaves)" : "\(octaves)"
+                }
+            )
+            
+            // Row 6 - Semitone Offset (-7 to +7, integers only)
             SliderRow(
                 label: "SEMITONE OFFSET",
                 value: Binding(
@@ -70,22 +87,7 @@ struct GlobalView: View {
                 }
             )
             
-            // Row 6 - Octave Offset (-2 to +2, integers only)
-            SliderRow(
-                label: "OCTAVE OFFSET",
-                value: Binding(
-                    get: { Double(paramManager.master.globalPitch.octaveOffset) },
-                    set: { newValue in
-                        paramManager.updateOctaveOffset(Int(round(newValue)))
-                    }
-                ),
-                range: -2...2,
-                step: 1.0,
-                displayFormatter: { value in
-                    let octaves = Int(round(value))
-                    return octaves > 0 ? "+\(octaves)" : "\(octaves)"
-                }
-            )
+            
             
             // Row 7 - Fine Tune (-50 to +50 cents, integers only)
             SliderRow(

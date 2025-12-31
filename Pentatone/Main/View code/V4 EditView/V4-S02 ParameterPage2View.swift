@@ -29,7 +29,7 @@ struct ContourView: View {
         Group {
             // Row 3 - Amp Envelope Attack (0-5 seconds)
             SliderRow(
-                label: "AMP ENVELOPE ATTACK",
+                label: "AMP ENV ATTACK",
                 value: Binding(
                     get: { paramManager.voiceTemplate.envelope.attackDuration },
                     set: { newValue in
@@ -44,7 +44,7 @@ struct ContourView: View {
             
             // Row 4 - Amp Envelope Decay (0-5 seconds)
             SliderRow(
-                label: "AMP ENVELOPE DECAY",
+                label: "AMP ENV DECAY",
                 value: Binding(
                     get: { paramManager.voiceTemplate.envelope.decayDuration },
                     set: { newValue in
@@ -59,7 +59,7 @@ struct ContourView: View {
             
             // Row 5 - Amp Envelope Sustain (0-1)
             SliderRow(
-                label: "AMP ENVELOPE SUSTAIN",
+                label: "AMP ENV SUSTAIN",
                 value: Binding(
                     get: { paramManager.voiceTemplate.envelope.sustainLevel },
                     set: { newValue in
@@ -74,7 +74,7 @@ struct ContourView: View {
             
             // Row 6 - Amp Envelope Release (0-5 seconds)
             SliderRow(
-                label: "AMP ENVELOPE RELEASE",
+                label: "AMP ENV RELEASE",
                 value: Binding(
                     get: { paramManager.voiceTemplate.envelope.releaseDuration },
                     set: { newValue in

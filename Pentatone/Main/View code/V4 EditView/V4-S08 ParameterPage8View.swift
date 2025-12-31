@@ -26,7 +26,7 @@ struct GlobLFOView: View {
         Group {
             // Row 1 - Global LFO Waveform (sine, triangle, square, sawtooth, reverse sawtooth)
             ParameterRow(
-                label: "GLOBAL LFO WAVEFORM",
+                label: "LFO WAVEFORM",
                 value: Binding(
                     get: { paramManager.master.globalLFO.waveform },
                     set: { newValue in
@@ -35,11 +35,11 @@ struct GlobLFOView: View {
                 ),
                 displayText: { waveform in
                     switch waveform {
-                    case .sine: return "SINE"
-                    case .triangle: return "TRIANGLE"
-                    case .square: return "SQUARE"
-                    case .sawtooth: return "SAWTOOTH"
-                    case .reverseSawtooth: return "REV SAW"
+                    case .sine: return "Sine"
+                    case .triangle: return "Triangle"
+                    case .square: return "Square"
+                    case .sawtooth: return "Sawtooth"
+                    case .reverseSawtooth: return "Reverse saw"
                     }
                 }
             )
@@ -47,7 +47,7 @@ struct GlobLFOView: View {
             // Row 2 - Global LFO Reset Mode (free, sync)
             // Note: Global LFO doesn't have "trigger" mode (no per-note triggering)
             ParameterRow(
-                label: "GLOBAL LFO MODE",
+                label: "LFO MODE",
                 value: Binding(
                     get: { paramManager.master.globalLFO.resetMode },
                     set: { newValue in
@@ -56,16 +56,16 @@ struct GlobLFOView: View {
                 ),
                 displayText: { mode in
                     switch mode {
-                    case .free: return "FREE"
+                    case .free: return "Free"
                     case .trigger: return "N/A"  // Not available for global LFO
-                    case .sync: return "SYNC"
+                    case .sync: return "Sync"
                     }
                 }
             )
             
             // Row 3 - Global LFO Frequency (0.01-20 Hz)
             SliderRow(
-                label: "GLOBAL LFO FREQUENCY",
+                label: "LFO FREQUENCY",
                 value: Binding(
                     get: { paramManager.master.globalLFO.frequency },
                     set: { newValue in
@@ -79,7 +79,7 @@ struct GlobLFOView: View {
             
             // Row 4 - Global LFO to Oscillator Amplitude (tremolo)
             SliderRow(
-                label: "GLOB LFO → OSC AMP",
+                label: "LFO TO AMP",
                 value: Binding(
                     get: { paramManager.master.globalLFO.amountToOscillatorAmplitude },
                     set: { newValue in
@@ -95,7 +95,7 @@ struct GlobLFOView: View {
             
             // Row 5 - Global LFO to Modulator Multiplier (FM ratio modulation)
             SliderRow(
-                label: "GLOB LFO → MOD MULT",
+                label: "LFO TO MOD MULTI",
                 value: Binding(
                     get: { paramManager.master.globalLFO.amountToModulatorMultiplier },
                     set: { newValue in
@@ -111,7 +111,7 @@ struct GlobLFOView: View {
             
             // Row 6 - Global LFO to Filter Frequency
             SliderRow(
-                label: "GLOB LFO → FILTER",
+                label: "LFO TO FILTER",
                 value: Binding(
                     get: { paramManager.master.globalLFO.amountToFilterFrequency },
                     set: { newValue in
@@ -127,7 +127,7 @@ struct GlobLFOView: View {
             
             // Row 7 - Global LFO to Delay Time
             SliderRow(
-                label: "GLOB LFO → DELAY TIME",
+                label: "LFO TO DELAY TIME",
                 value: Binding(
                     get: { paramManager.master.globalLFO.amountToDelayTime },
                     set: { newValue in

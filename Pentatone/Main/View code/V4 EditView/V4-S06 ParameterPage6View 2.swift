@@ -25,7 +25,7 @@ struct AuxEnvView: View {
         Group {
             // Row 1 - Auxiliary Envelope Attack (0-5 seconds)
             SliderRow(
-                label: "AUX ENVELOPE ATTACK",
+                label: "AUX ENV ATTACK",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.attack },
                     set: { newValue in
@@ -40,7 +40,7 @@ struct AuxEnvView: View {
             
             // Row 2 - Auxiliary Envelope Decay (0-5 seconds)
             SliderRow(
-                label: "AUX ENVELOPE DECAY",
+                label: "AUX ENV DECAY",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.decay },
                     set: { newValue in
@@ -55,7 +55,7 @@ struct AuxEnvView: View {
             
             // Row 3 - Auxiliary Envelope Sustain (0-1)
             SliderRow(
-                label: "AUX ENVELOPE SUSTAIN",
+                label: "AUX ENV SUSTAIN",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.sustain },
                     set: { newValue in
@@ -70,7 +70,7 @@ struct AuxEnvView: View {
             
             // Row 4 - Auxiliary Envelope Release (0-5 seconds)
             SliderRow(
-                label: "AUX ENVELOPE RELEASE",
+                label: "AUX ENV RELEASE",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.release },
                     set: { newValue in
@@ -85,7 +85,7 @@ struct AuxEnvView: View {
             
             // Row 5 - Auxiliary Envelope to Oscillator Pitch (pitch sweep)
             SliderRow(
-                label: "AUX ENV → PITCH",
+                label: "AUX ENV TO PITCH",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.amountToOscillatorPitch },
                     set: { newValue in
@@ -102,7 +102,7 @@ struct AuxEnvView: View {
             
             // Row 6 - Auxiliary Envelope to Filter Frequency
             SliderRow(
-                label: "AUX ENV → FILTER",
+                label: "AUX ENV TO FILTER",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.amountToFilterFrequency },
                     set: { newValue in
@@ -119,7 +119,7 @@ struct AuxEnvView: View {
             
             // Row 7 - Auxiliary Envelope to Vibrato (meta-modulation of voice LFO pitch amount)
             SliderRow(
-                label: "AUX ENV → VIBRATO",
+                label: "AUX ENV TO LFO",
                 value: Binding(
                     get: { paramManager.voiceTemplate.modulation.auxiliaryEnvelope.amountToVibrato },
                     set: { newValue in
