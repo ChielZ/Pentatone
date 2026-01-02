@@ -158,8 +158,8 @@ struct DelayParameters: Codable, Equatable {
     
     static let `default` = DelayParameters(
         time: 0.5,
-        feedback: 0.2,
-        dryWetMix: 0.0,
+        feedback: 0.5,
+        dryWetMix: 0.5,
         pingPong: true
     )
 }
@@ -171,9 +171,9 @@ struct ReverbParameters: Codable, Equatable {
     var balance: Double  // 0 = all dry, 1 = all wet
     
     static let `default` = ReverbParameters(
-        feedback: 0.9,
+        feedback: 0.5,
         cutoffFrequency: 10_000,
-        balance: 0.0
+        balance: 0.5
     )
 }
 
@@ -248,6 +248,62 @@ struct GlobalPitchParameters: Codable, Equatable {
     }
 }
 
+/// Parameters defining how macro controls affect underlying parameters
+struct MacroControlParameters: Codable, Equatable {
+    // Tone macro -> affects modulation index, filter cutoff, and filter saturation
+    var toneToModulationIndexRange: Double      // +/- range (0-5)
+    var toneToFilterCutoffOctaves: Double       // +/- range in octaves (0-4)
+    var toneToFilterSaturationRange: Double     // +/- range (0-2)
+    
+    // Ambience macro -> affects delay and reverb
+    var ambienceToDelayFeedbackRange: Double    // +/- range (0-1)
+    var ambienceToDelayMixRange: Double         // +/- range (0-1)
+    var ambienceToReverbFeedbackRange: Double   // +/- range (0-1)
+    var ambienceToReverbMixRange: Double        // +/- range (0-1)
+    
+    static let `default` = MacroControlParameters(
+        toneToModulationIndexRange: 2.5,
+        toneToFilterCutoffOctaves: 2.0,
+        toneToFilterSaturationRange: 1.0,
+        ambienceToDelayFeedbackRange: 0.5,
+        ambienceToDelayMixRange: 0.5,
+        ambienceToReverbFeedbackRange: 0.5,
+        ambienceToReverbMixRange: 0.5
+    )
+}
+
+/// Current state of macro controls and their base values
+struct MacroControlState: Codable, Equatable {
+    // Base values - set when preset is loaded or edited
+    var baseModulationIndex: Double
+    var baseFilterCutoff: Double
+    var baseFilterSaturation: Double
+    var baseDelayFeedback: Double
+    var baseDelayMix: Double
+    var baseReverbFeedback: Double
+    var baseReverbMix: Double
+    var basePreVolume: Double
+    
+    // Macro positions (-1.0 to +1.0, where 0 is center/neutral)
+    var volumePosition: Double
+    var tonePosition: Double
+    var ambiencePosition: Double
+    
+    static let `default` = MacroControlState(
+        baseModulationIndex: 1.0,
+        baseFilterCutoff: 1200.0,
+        baseFilterSaturation: 2.0,
+        baseDelayFeedback: 0.5,      // Match DelayParameters.default.feedback
+        baseDelayMix: 0.5,            // Match DelayParameters.default.dryWetMix
+        baseReverbFeedback: 0.5,      // Match ReverbParameters.default.feedback
+        baseReverbMix: 0.5,           // Match ReverbParameters.default.balance
+        basePreVolume: 0.5,
+        volumePosition: 0.5,          // Match OutputParameters.default.preVolume
+        tonePosition: 0.0,
+        ambiencePosition: 0.0
+    )
+}
+
 /// Master parameters affecting the entire audio engine
 struct MasterParameters: Codable, Equatable {
     var delay: DelayParameters
@@ -257,6 +313,7 @@ struct MasterParameters: Codable, Equatable {
     var globalLFO: GlobalLFOParameters     // Phase 5C: Global modulation
     var tempo: Double                      // BPM for tempo-synced modulation
     var voiceMode: VoiceMode               // Monophonic or polyphonic
+    var macroControl: MacroControlParameters // Macro control ranges
     
     static let `default` = MasterParameters(
         delay: .default,
@@ -265,7 +322,8 @@ struct MasterParameters: Codable, Equatable {
         globalPitch: .default,
         globalLFO: .default,  // Uses GlobalLFOParameters.default
         tempo: 120.0,
-        voiceMode: .polyphonic
+        voiceMode: .polyphonic,
+        macroControl: .default
     )
 }
 
@@ -277,6 +335,7 @@ struct AudioParameterSet: Codable, Equatable, Identifiable {
     var name: String
     var voiceTemplate: VoiceParameters  // Template applied to all voices
     var master: MasterParameters
+    var macroState: MacroControlState   // Current macro positions and base values
     var createdAt: Date
     
     static let `default` = AudioParameterSet(
@@ -284,6 +343,7 @@ struct AudioParameterSet: Codable, Equatable, Identifiable {
         name: "Default",
         voiceTemplate: .default,
         master: .default,
+        macroState: .default,
         createdAt: Date()
     )
 }
@@ -306,6 +366,9 @@ final class AudioParameterManager: ObservableObject {
     
     /// Current voice template - used as base for all voices
     @Published private(set) var voiceTemplate: VoiceParameters = .default
+    
+    /// Current macro control state
+    @Published private(set) var macroState: MacroControlState = .default
     
     // MARK: - Initialization
     
@@ -795,6 +858,170 @@ final class AudioParameterManager: ObservableObject {
         voiceTemplate.modulation.touchAftertouch.amountToVibrato = value
     }
 
+    // MARK: - Macro Control Updates
+    
+    /// Update macro control parameter ranges
+    func updateMacroControlParameters(_ parameters: MacroControlParameters) {
+        master.macroControl = parameters
+    }
+    
+    /// Update tone to modulation index range
+    func updateToneToModulationIndexRange(_ value: Double) {
+        master.macroControl.toneToModulationIndexRange = value
+    }
+    
+    /// Update tone to filter cutoff octaves
+    func updateToneToFilterCutoffOctaves(_ value: Double) {
+        master.macroControl.toneToFilterCutoffOctaves = value
+    }
+    
+    /// Update tone to filter saturation range
+    func updateToneToFilterSaturationRange(_ value: Double) {
+        master.macroControl.toneToFilterSaturationRange = value
+    }
+    
+    /// Update ambience to delay feedback range
+    func updateAmbienceToDelayFeedbackRange(_ value: Double) {
+        master.macroControl.ambienceToDelayFeedbackRange = value
+    }
+    
+    /// Update ambience to delay mix range
+    func updateAmbienceToDelayMixRange(_ value: Double) {
+        master.macroControl.ambienceToDelayMixRange = value
+    }
+    
+    /// Update ambience to reverb feedback range
+    func updateAmbienceToReverbFeedbackRange(_ value: Double) {
+        master.macroControl.ambienceToReverbFeedbackRange = value
+    }
+    
+    /// Update ambience to reverb mix range
+    func updateAmbienceToReverbMixRange(_ value: Double) {
+        master.macroControl.ambienceToReverbMixRange = value
+    }
+    
+    // MARK: - Macro Control Position Updates
+    
+    /// Update volume macro position and apply to parameters
+    /// Position is absolute (0.0 to 1.0)
+    func updateVolumeMacro(_ position: Double) {
+        // Volume is straightforward - directly maps to preVolume
+        let clampedPosition = min(max(position, 0.0), 1.0)
+        macroState.volumePosition = clampedPosition
+        
+        // Apply directly to preVolume and update master parameter
+        master.output.preVolume = clampedPosition
+        voicePool?.voiceMixer.volume = AUValue(clampedPosition)
+    }
+    
+    /// Update tone macro position and apply to parameters
+    /// Position is relative (-1.0 to +1.0, where 0 is neutral)
+    func updateToneMacro(_ position: Double) {
+        let clampedPosition = min(max(position, -1.0), 1.0)
+        macroState.tonePosition = clampedPosition
+        
+        // Apply tone adjustments
+        applyToneMacro()
+    }
+    
+    /// Update ambience macro position and apply to parameters
+    /// Position is relative (-1.0 to +1.0, where 0 is neutral)
+    func updateAmbienceMacro(_ position: Double) {
+        let clampedPosition = min(max(position, -1.0), 1.0)
+        macroState.ambiencePosition = clampedPosition
+        
+        // Apply ambience adjustments
+        applyAmbienceMacro()
+    }
+    
+    /// Capture current parameter values as base values for macro controls
+    /// Should be called when loading a preset or when user edits parameters directly
+    func captureBaseValues() {
+        macroState.baseModulationIndex = voiceTemplate.oscillator.modulationIndex
+        macroState.baseFilterCutoff = voiceTemplate.filter.cutoffFrequency
+        macroState.baseFilterSaturation = voiceTemplate.filter.saturation
+        macroState.baseDelayFeedback = master.delay.feedback
+        macroState.baseDelayMix = master.delay.dryWetMix
+        macroState.baseReverbFeedback = master.reverb.feedback
+        macroState.baseReverbMix = master.reverb.balance
+        macroState.basePreVolume = master.output.preVolume
+        
+        // Reset tone and ambience macro positions to neutral (center)
+        // Volume position should match the current preVolume (it's absolute, not relative)
+        macroState.volumePosition = master.output.preVolume
+        macroState.tonePosition = 0.0
+        macroState.ambiencePosition = 0.0
+    }
+    
+    // MARK: - Private Macro Application Methods
+    
+    /// Apply tone macro to modulation index, filter cutoff, and saturation
+    private func applyToneMacro() {
+        let position = macroState.tonePosition
+        let ranges = master.macroControl
+        
+        // Modulation Index: base +/- range
+        let newModIndex = macroState.baseModulationIndex + (position * ranges.toneToModulationIndexRange)
+        let clampedModIndex = min(max(newModIndex, 0.0), 10.0)
+        updateModulationIndex(clampedModIndex)
+        
+        // Filter Cutoff: base * 2^(position * octaves)
+        // Moving up increases frequency, moving down decreases
+        let octaveMultiplier = pow(2.0, position * ranges.toneToFilterCutoffOctaves)
+        let newCutoff = macroState.baseFilterCutoff * octaveMultiplier
+        let clampedCutoff = min(max(newCutoff, 20.0), 20000.0)
+        updateFilterCutoff(clampedCutoff)
+        
+        // Filter Saturation: base +/- range
+        let newSaturation = macroState.baseFilterSaturation + (position * ranges.toneToFilterSaturationRange)
+        let clampedSaturation = min(max(newSaturation, 0.0), 10.0)
+        updateFilterSaturation(clampedSaturation)
+        
+        // Apply to all voices
+        applyOscillatorToAllVoices()
+        applyFilterToAllVoices()
+    }
+    
+    /// Apply ambience macro to delay and reverb parameters
+    private func applyAmbienceMacro() {
+        let position = macroState.ambiencePosition
+        let ranges = master.macroControl
+        
+        // Delay Feedback: base +/- range
+        let newDelayFeedback = macroState.baseDelayFeedback + (position * ranges.ambienceToDelayFeedbackRange)
+        let clampedDelayFeedback = min(max(newDelayFeedback, 0.0), 1.0)
+        updateDelayFeedback(clampedDelayFeedback)
+        
+        // Delay Mix: base +/- range
+        let newDelayMix = macroState.baseDelayMix + (position * ranges.ambienceToDelayMixRange)
+        let clampedDelayMix = min(max(newDelayMix, 0.0), 1.0)
+        updateDelayMix(clampedDelayMix)
+        
+        // Reverb Feedback: base +/- range
+        let newReverbFeedback = macroState.baseReverbFeedback + (position * ranges.ambienceToReverbFeedbackRange)
+        let clampedReverbFeedback = min(max(newReverbFeedback, 0.0), 1.0)
+        updateReverbFeedback(clampedReverbFeedback)
+        
+        // Reverb Mix: base +/- range
+        let newReverbMix = macroState.baseReverbMix + (position * ranges.ambienceToReverbMixRange)
+        let clampedReverbMix = min(max(newReverbMix, 0.0), 1.0)
+        updateReverbMix(clampedReverbMix)
+    }
+    
+    /// Apply oscillator parameters to all voices
+    private func applyOscillatorToAllVoices() {
+        let params = voiceTemplate.oscillator
+        voicePool?.updateAllVoiceOscillators(params)
+    }
+    
+    /// Apply filter parameters to all voices
+    private func applyFilterToAllVoices() {
+        let params = voiceTemplate.filter
+        for voice in voicePool?.voices ?? [] {
+            voice.updateFilterParameters(params)
+        }
+    }
+
     
     // MARK: - Preset Management
     
@@ -802,6 +1029,7 @@ final class AudioParameterManager: ObservableObject {
     func loadPreset(_ preset: AudioParameterSet) {
         voiceTemplate = preset.voiceTemplate
         master = preset.master
+        macroState = preset.macroState
         
         applyAllParameters()
     }
@@ -813,6 +1041,7 @@ final class AudioParameterManager: ObservableObject {
             name: name,
             voiceTemplate: voiceTemplate,
             master: master,
+            macroState: macroState,
             createdAt: Date()
         )
     }

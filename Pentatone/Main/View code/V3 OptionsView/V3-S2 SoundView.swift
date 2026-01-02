@@ -32,6 +32,7 @@ struct SoundView: View {
                         }
                 
             }
+            MacroControlsView()
             ZStack { // Row 4
                 RoundedRectangle(cornerRadius: radius)
                     .fill(Color("HighlightColour"))

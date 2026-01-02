@@ -88,7 +88,7 @@ enum EngineManager {
                                 feedback: AUValue(masterParams.delay.feedback),
                                 dryWetMix: AUValue(1-masterParams.delay.dryWetMix),
                                 pingPong: masterParams.delay.pingPong,
-                                maximumDelayTime: 10
+                                maximumDelayTime: 2
                                 )
         
         // Reverb processes the delayed signal - initialized with parameters
