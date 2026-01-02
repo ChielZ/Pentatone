@@ -56,6 +56,9 @@ final class VoicePool {
     /// Global LFO affecting all voices (will be implemented in Phase 5)
     var globalLFO: GlobalLFOParameters = .default
     
+    /// Base delay time (from tempo-synced value, before LFO modulation)
+    private var baseDelayTime: Double = 0.5  // Default: 1/4 note at 120 BPM
+    
     // MARK: - Initialization
     
     /// Creates a voice pool with the specified polyphony
@@ -423,6 +426,14 @@ final class VoicePool {
         globalLFO = parameters
     }
     
+    /// Updates the base delay time (tempo-synced value before LFO modulation)
+    /// Should be called whenever tempo or delay time value changes
+    /// - Parameter delayTime: The delay time in seconds (already calculated from tempo and time value)
+    func updateBaseDelayTime(_ delayTime: Double) {
+        baseDelayTime = delayTime
+        print("🎵 VoicePool: Base delay time updated to \(delayTime)s")
+    }
+    
     /// Updates modulation parameters for all voices
     func updateAllVoiceModulation(_ parameters: VoiceModulationParameters) {
         for voice in voices {
@@ -526,14 +537,15 @@ final class VoicePool {
         guard globalLFO.isEnabled, globalLFO.hasActiveDestinations else { return }
         
         // Global LFO Destination: Delay Time
+        // Apply LFO offset to the base tempo-synced delay time (vibrato effect)
         if globalLFO.amountToDelayTime != 0.0, let delay = self.delay {
-            let baseValue = Double(delay.time)
             let finalDelayTime = ModulationRouter.calculateDelayTime(
-                baseDelayTime: baseValue,
+                baseDelayTime: baseDelayTime,  // Use stored base (tempo-synced value)
                 globalLFOValue: rawValue,
                 globalLFOAmount: globalLFO.amountToDelayTime
             )
-            delay.$time.ramp(to: AUValue(finalDelayTime), duration: 0)
+            // Use ramp for smooth changes (no clicks)
+            delay.$time.ramp(to: AUValue(finalDelayTime), duration: 0.005)
         }
         
         // Note: Other global LFO destinations (amplitude, modulator multiplier, filter)

@@ -134,10 +134,10 @@ struct GlobLFOView: View {
                         paramManager.updateGlobalLFOAmountToDelayTime(newValue)
                     }
                 ),
-                range: -0.5...0.5,
-                step: 0.01,
+                range: -0.05...0.05,
+                step: 0.001,
                 displayFormatter: { value in
-                    return value > 0 ? String(format: "+%.2f s", value) : String(format: "%.2f s", value)
+                    return value > 0 ? String(format: "+%.3f s", value) : String(format: "%.3f s", value)
                 }
             )
         }

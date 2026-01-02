@@ -458,6 +458,8 @@ final class AudioParameterManager: ObservableObject {
         // Calculate actual time in seconds and apply to engine
         let timeInSeconds = timeValue.timeInSeconds(tempo: master.tempo)
         fxDelay?.time = AUValue(timeInSeconds)
+        // Update base delay time in voice pool for LFO modulation
+        voicePool?.updateBaseDelayTime(timeInSeconds)
     }
     
     func updateDelayFeedback(_ feedback: Double) {
@@ -506,6 +508,8 @@ final class AudioParameterManager: ObservableObject {
         // Recalculate and apply delay time with new tempo
         let timeInSeconds = master.delay.timeInSeconds(tempo: tempo)
         fxDelay?.time = AUValue(timeInSeconds)
+        // Update base delay time in voice pool for LFO modulation
+        voicePool?.updateBaseDelayTime(timeInSeconds)
     }
     
     // MARK: - Voice Mode Updates
@@ -836,41 +840,49 @@ final class AudioParameterManager: ObservableObject {
     /// Update global LFO waveform
     func updateGlobalLFOWaveform(_ waveform: LFOWaveform) {
         master.globalLFO.waveform = waveform
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO reset mode
     func updateGlobalLFOResetMode(_ mode: LFOResetMode) {
         master.globalLFO.resetMode = mode
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO frequency mode
     func updateGlobalLFOFrequencyMode(_ mode: LFOFrequencyMode) {
         master.globalLFO.frequencyMode = mode
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO frequency
     func updateGlobalLFOFrequency(_ value: Double) {
         master.globalLFO.frequency = value
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO amount to oscillator amplitude
     func updateGlobalLFOAmountToAmplitude(_ value: Double) {
         master.globalLFO.amountToOscillatorAmplitude = value
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO amount to modulator multiplier
     func updateGlobalLFOAmountToModulatorMultiplier(_ value: Double) {
         master.globalLFO.amountToModulatorMultiplier = value
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO amount to filter frequency
     func updateGlobalLFOAmountToFilter(_ value: Double) {
         master.globalLFO.amountToFilterFrequency = value
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO amount to delay time
     func updateGlobalLFOAmountToDelayTime(_ value: Double) {
         master.globalLFO.amountToDelayTime = value
+        voicePool?.updateGlobalLFO(master.globalLFO)
     }
     
     /// Update global LFO destination (deprecated - destinations are now fixed)
@@ -1134,6 +1146,8 @@ final class AudioParameterManager: ObservableObject {
         delay.time = AUValue(timeInSeconds)
         delay.feedback = AUValue(master.delay.feedback)
         delay.dryWetMix = AUValue(master.delay.dryWetMix)
+        // Update base delay time in voice pool for LFO modulation
+        voicePool?.updateBaseDelayTime(timeInSeconds)
     }
     
     private func applyReverbParameters() {

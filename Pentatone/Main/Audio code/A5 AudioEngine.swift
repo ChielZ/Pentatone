@@ -118,6 +118,10 @@ enum EngineManager {
             // Pass FX node references to voice pool for global LFO modulation
             voicePool.setFXNodes(delay: fxDelay, reverb: fxReverb)
             
+            // Initialize base delay time for LFO modulation
+            let initialDelayTime = masterParams.delay.timeInSeconds(tempo: masterParams.tempo)
+            voicePool.updateBaseDelayTime(initialDelayTime)
+            
             // Start modulation system (Phase 5B)
             voicePool.startModulation()
             
