@@ -5,30 +5,30 @@
 //  Created by Chiel Zwinkels on 25/12/2025.
 // SUBVIEW 10 - PRESET MANAGEMENT
 
-/*
+
  import SwiftUI
 
- struct ModEnvView: View {
+ struct PresetView: View {
      var body: some View {
          Group {
              ZStack { // Row 3
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("MOD ENVELOPE ATTACK")
+                 Text("SELECT BANK")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
              }
              ZStack { // Row 4
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("MOD ENVELOPE DECAY")
+                 Text("SELECT PRESET")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
              }
              ZStack { // Row 5
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("MOD ENVELOPE SUSTAIN")
+                 Text("SAVE PRESET")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
              }
@@ -36,7 +36,7 @@
              ZStack { // Row 6
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("MOD ENVELOPE RELEASE")
+                 Text("EXPORT PRESET")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
             }
@@ -44,7 +44,7 @@
              ZStack { // Row 7
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("MOD ENVELOPE AMOUNT")
+                 Text("IMPORT PRESET")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
 
@@ -52,7 +52,7 @@
              ZStack { // Row 8
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("KEY TRACK DESTINATION")
+                 Text("ACTIVATE USER BANKS")
                      .foregroundColor(Color("HighlightColour"))
                      .adaptiveFont("Futura", size: 30)
 
@@ -60,9 +60,7 @@
              ZStack { // Row 9
                  RoundedRectangle(cornerRadius: radius)
                      .fill(Color("BackgroundColour"))
-                 Text("KEY TRACK AMOUNT")
-                     .foregroundColor(Color("HighlightColour"))
-                     .adaptiveFont("Futura", size: 30)
+                 
 
              }
          }
@@ -73,10 +71,10 @@
      ZStack {
          Color("BackgroundColour").ignoresSafeArea()
          VStack {
-             ModEnvView()
+             PresetView()
          }
          .padding(25)
      }
  }
 
- */
+ 

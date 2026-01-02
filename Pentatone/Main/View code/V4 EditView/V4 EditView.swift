@@ -13,7 +13,7 @@ import SwiftUI
 
 
 enum EditSubView: CaseIterable {
-    case oscillators, contour, effects, global, modenv, auxenv,voicelfo,globallfo, touch
+    case oscillators, contour, effects, global, modenv, auxenv,voicelfo,globallfo, touch, preset, macro
     
     var displayName: String {
         switch self {
@@ -26,6 +26,8 @@ enum EditSubView: CaseIterable {
         case .voicelfo: return "VOICE LFO"
         case .globallfo: return "GLOBAL LFO"
         case .touch: return "TOUCH"
+        case .preset: return "PRESET"
+        case .macro: return "MACRO"
         }
     }
 }
@@ -141,6 +143,10 @@ struct EditView: View {
                         GlobLFOView()
                     case .touch:
                         TouchView()
+                    case .preset:
+                        PresetView()
+                    case .macro:
+                        MacroView()
                     }
                 }
                 .frame(maxHeight: .infinity)

@@ -21,7 +21,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Main/View code/V4 EditView/V4-S11 ParameterPage11View.swift",
 			);
 			target = 7F3D45E02EDCF9AC00538543 /* Pentatone */;
 		};
