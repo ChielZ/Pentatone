@@ -197,60 +197,6 @@ struct DelayParameters: Codable, Equatable {
     func timeInSeconds(tempo: Double) -> Double {
         return timeValue.timeInSeconds(tempo: tempo)
     }
-    
-    // MARK: - Migration Support (Backwards Compatibility)
-    
-    enum CodingKeys: String, CodingKey {
-        case timeValue
-        case time  // Old key (for migration)
-        case feedback
-        case dryWetMix
-        case pingPong
-    }
-    
-    /// Custom decoder to support migration from old format
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // Try to decode new format first
-        if let timeValue = try? container.decode(DelayTimeValue.self, forKey: .timeValue) {
-            self.timeValue = timeValue
-        } else if let oldTime = try? container.decode(Double.self, forKey: .time) {
-            // Fall back to old format - convert seconds to closest note value
-            // Assume 120 BPM as default for migration (most common tempo)
-            let normalizedValue = oldTime / (240.0 / 120.0)  // oldTime / 2.0
-            self.timeValue = DelayTimeValue.allCases.min(by: {
-                abs($0.rawValue - normalizedValue) < abs($1.rawValue - normalizedValue)
-            }) ?? .quarter
-            print("⚠️ Migrated old delay time \(oldTime)s to \(self.timeValue.displayName) (assumed 120 BPM)")
-        } else {
-            // Neither key found - use default
-            self.timeValue = .quarter
-        }
-        
-        self.feedback = try container.decode(Double.self, forKey: .feedback)
-        self.dryWetMix = try container.decode(Double.self, forKey: .dryWetMix)
-        self.pingPong = try container.decode(Bool.self, forKey: .pingPong)
-    }
-    
-    /// Custom encoder - always encodes new format
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        // Always encode new format (timeValue, not the old 'time' key)
-        try container.encode(timeValue, forKey: .timeValue)
-        try container.encode(feedback, forKey: .feedback)
-        try container.encode(dryWetMix, forKey: .dryWetMix)
-        try container.encode(pingPong, forKey: .pingPong)
-    }
-    
-    /// Standard initializer (for code usage)
-    init(timeValue: DelayTimeValue, feedback: Double, dryWetMix: Double, pingPong: Bool) {
-        self.timeValue = timeValue
-        self.feedback = feedback
-        self.dryWetMix = dryWetMix
-        self.pingPong = pingPong
-    }
 }
 
 /// Parameters for the reverb effect

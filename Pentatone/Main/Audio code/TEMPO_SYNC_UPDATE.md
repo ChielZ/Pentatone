@@ -147,14 +147,7 @@ Where:
 ## Migration Notes
 
 ### For Existing Presets
-Migration logic has been built into `DelayParameters` to automatically handle old presets:
-
-- When loading a preset with the old `time: Double` format, it automatically converts to the closest `DelayTimeValue`
-- Assumes 120 BPM for the conversion (a reasonable default)
-- Prints a warning to the console for debugging
-- If neither format is found, defaults to `.quarter` (1/4 note)
-
-The custom `init(from decoder:)` implementation handles this automatically - no manual migration required!
+Since the app is still in development, no migration code was needed. Swift's automatic `Codable` synthesis handles encoding and decoding cleanly.
 
 ## Future Enhancements
 
@@ -173,10 +166,9 @@ This implementation sets the foundation for:
 
 - [x] Delay time stays constant when tempo changes
 - [x] Delay time display shows correct note division
-- [x] Built-in migration support for old presets
+- [x] Simplified code with automatic `Codable` synthesis
 - [ ] Test: Preset saving stores `DelayTimeValue` correctly
 - [ ] Test: Preset loading restores delay time correctly
-- [ ] Test: Loading old presets triggers migration (check console for warning)
 - [ ] Test: All tempo values (30-240 BPM) produce sensible delay times
 - [ ] Test: All delay time divisions work correctly
 - [ ] Test: Delay feedback and mix still work correctly
@@ -186,9 +178,9 @@ This implementation sets the foundation for:
 
 1. **A1 SoundParameters.swift**
    - Added `DelayTimeValue` enum (musical note divisions)
-   - Modified `DelayParameters` struct
-   - Added migration support with custom `init(from decoder:)`
-   - Updated `AudioParameterManager.updateTempo(_:)`
+   - Modified `DelayParameters` struct (changed from `time: Double` to `timeValue: DelayTimeValue`)
+   - Uses Swift's automatic `Codable` synthesis (no custom encoding/decoding needed)
+   - Updated `AudioParameterManager.updateTempo(_:)` to recalculate delay time
    - Updated `AudioParameterManager.updateDelayTimeValue(_:)` (new method)
    - Updated `AudioParameterManager.applyDelayParameters()`
 
