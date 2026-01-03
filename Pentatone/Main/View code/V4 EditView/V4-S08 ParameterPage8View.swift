@@ -44,23 +44,15 @@ struct GlobLFOView: View {
                 }
             )
             
-            // Row 2 - Global LFO Reset Mode (free, sync)
-            // Note: Global LFO doesn't have "trigger" mode (no per-note triggering)
-            ParameterRow(
+            // Row 2 - Global LFO Reset Mode (free, sync only)
+            GlobalLFOModeRow(
                 label: "LFO MODE",
                 value: Binding(
                     get: { paramManager.master.globalLFO.resetMode },
                     set: { newValue in
                         paramManager.updateGlobalLFOResetMode(newValue)
                     }
-                ),
-                displayText: { mode in
-                    switch mode {
-                    case .free: return "Free"
-                    case .trigger: return "N/A"  // Not available for global LFO
-                    case .sync: return "Sync"
-                    }
-                }
+                )
             )
             
             // Row 3 - Global LFO Frequency (0.01-20 Hz)
@@ -141,6 +133,98 @@ struct GlobLFOView: View {
                 }
             )
         }
+    }
+}
+
+// MARK: - Global LFO Mode Row (Free and Sync only)
+
+/// Custom parameter row for Global LFO mode that only shows Free and Sync modes
+private struct GlobalLFOModeRow: View {
+    let label: String
+    @Binding var value: LFOResetMode
+    
+    // Only Free and Sync are valid for global LFO
+    private let validModes: [LFOResetMode] = [.free, .sync]
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: radius)
+                .fill(Color("BackgroundColour"))
+            
+            HStack {
+                // Left button (<)
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color("SupportColour"))
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .overlay(
+                        Text("<")
+                            .foregroundColor(Color("BackgroundColour"))
+                            .adaptiveFont("Futura", size: 30)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        cyclePrevious()
+                    }
+                
+                Spacer()
+                
+                // Center display - label and value
+                VStack(spacing: 2) {
+                    Text(label)
+                        .foregroundColor(Color("HighlightColour"))
+                        .adaptiveFont("Futura", size: 18)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                    
+                    Text(displayText(value))
+                        .foregroundColor(Color("HighlightColour"))
+                        .adaptiveFont("Futura", size: 24)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Right button (>)
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color("SupportColour"))
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .overlay(
+                        Text(">")
+                            .foregroundColor(Color("BackgroundColour"))
+                            .adaptiveFont("Futura", size: 30)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        cycleNext()
+                    }
+            }
+            .padding(.horizontal, 0)
+        }
+    }
+    
+    private func displayText(_ mode: LFOResetMode) -> String {
+        switch mode {
+        case .free: return "Free"
+        case .trigger: return "Trigger"  // Should never be displayed
+        case .sync: return "Sync"
+        }
+    }
+    
+    private func cycleNext() {
+        guard let currentIndex = validModes.firstIndex(of: value) else { return }
+        let nextIndex = (currentIndex + 1) % validModes.count
+        value = validModes[nextIndex]
+    }
+    
+    private func cyclePrevious() {
+        guard let currentIndex = validModes.firstIndex(of: value) else { return }
+        let previousIndex = (currentIndex - 1 + validModes.count) % validModes.count
+        value = validModes[previousIndex]
     }
 }
 
