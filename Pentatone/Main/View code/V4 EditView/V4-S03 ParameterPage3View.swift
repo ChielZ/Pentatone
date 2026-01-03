@@ -77,19 +77,25 @@ struct EffectsView: View {
                 displayFormatter: { String(format: "%.2f", $0) }
             )
             
-            // Row 5 - Delay Ping Pong (on/off)
-            ParameterRow(
-                label: "DELAY PING PONG",
+            // Row 5 - Delay tone
+            SliderRow(
+                label: "DELAY TONE",
                 value: Binding(
-                    get: { PingPongMode.from(paramManager.master.delay.pingPong) },
+                    get: { paramManager.master.delay.toneCutoff },
                     set: { newValue in
-                        paramManager.updateDelayPingPong(newValue.boolValue)
-                        applyDelayToEngine()
+                        paramManager.updateDelayToneCutoff(newValue)
                     }
                 ),
-                displayText: { $0.displayName }
+                range: 200...20_000,
+                step: 100,
+                displayFormatter: { cutoff in
+                    if cutoff < 1000 {
+                        return String(format: "%.0f Hz", cutoff)
+                    } else {
+                        return String(format: "%.1f kHz", cutoff / 1000)
+                    }
+                }
             )
-            
             // Row 6 - Delay Mix (0-1)
             SliderRow(
                 label: "DELAY MIX",

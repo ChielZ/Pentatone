@@ -183,14 +183,15 @@ enum DelayTimeValue: Double, Codable, Equatable, CaseIterable {
 struct DelayParameters: Codable, Equatable {
     var timeValue: DelayTimeValue  // Musical note division (always tempo-synced)
     var feedback: Double
-    var dryWetMix: Double
-    var pingPong: Bool
+    var dryWetMix: Double          // Now controlled by external DryWetMixer
+    var toneCutoff: Double         // Lowpass filter cutoff (200 Hz - 20 kHz)
+    // Note: pingPong is now always enabled (removed as parameter)
     
     static let `default` = DelayParameters(
         timeValue: .quarter,  // 1/4 note
         feedback: 0.5,
         dryWetMix: 0.5,
-        pingPong: true
+        toneCutoff: 10_000    // Wide open by default
     )
     
     /// Calculate actual delay time in seconds based on current tempo
@@ -447,12 +448,12 @@ final class AudioParameterManager: ObservableObject {
         master.delay = parameters
         applyDelayParameters()
     }
-    
+    /* deprecated, now uses separate drywetmixer
     func updateDelayMix(_ mix: Double) {
         master.delay.dryWetMix = mix
         fxDelay?.dryWetMix = AUValue(1-mix)
     }
-    
+    */
     func updateDelayTimeValue(_ timeValue: DelayTimeValue) {
         master.delay.timeValue = timeValue
         // Calculate actual time in seconds and apply to engine
@@ -467,10 +468,14 @@ final class AudioParameterManager: ObservableObject {
         fxDelay?.feedback = AUValue(feedback)
     }
     
-    func updateDelayPingPong(_ pingPong: Bool) {
-        master.delay.pingPong = pingPong
-        // Note: PingPong mode may need to be handled in the audio engine setup
-        // depending on your delay implementation
+    func updateDelayToneCutoff(_ cutoff: Double) {
+        master.delay.toneCutoff = cutoff
+        delayLowpass?.cutoffFrequency = AUValue(cutoff)
+    }
+    
+    func updateDelayMix(_ mix: Double) {
+        master.delay.dryWetMix = mix
+        delayDryWetMixer?.balance = AUValue(mix)
     }
     
     func updateReverb(_ parameters: ReverbParameters) {
@@ -1145,7 +1150,14 @@ final class AudioParameterManager: ObservableObject {
         let timeInSeconds = master.delay.timeInSeconds(tempo: master.tempo)
         delay.time = AUValue(timeInSeconds)
         delay.feedback = AUValue(master.delay.feedback)
-        delay.dryWetMix = AUValue(master.delay.dryWetMix)
+        // Note: delay.dryWetMix is now fixed at 0.0 (100% wet) - controlled by external mixer
+        
+        // Update filter
+        delayLowpass?.cutoffFrequency = AUValue(master.delay.toneCutoff)
+        
+        // Update dry/wet mixer
+        delayDryWetMixer?.balance = AUValue(master.delay.dryWetMix)
+        
         // Update base delay time in voice pool for LFO modulation
         voicePool?.updateBaseDelayTime(timeInSeconds)
     }

@@ -15,6 +15,8 @@ import DunneAudioKit
 // Shared engine and mixer for the entire app (single engine architecture)
 let sharedEngine = AudioEngine()
 private(set) var fxDelay: StereoDelay!
+private(set) var delayLowpass: LowPassButterworthFilter!
+private(set) var delayDryWetMixer: DryWetMixer!
 private(set) var fxReverb: CostelloReverb!
 private(set) var outputMixer: Mixer!
 
@@ -81,19 +83,38 @@ enum EngineManager {
         // Apply voice modulation parameters to all voices
         voicePool.updateAllVoiceModulation(voiceParams.modulation)
         
-        // Delay processes the voice pool output - initialized with parameters
+        // NEW SIGNAL CHAIN:
+        // VoicePool → Delay (100% wet) → Butterworth Lowpass → DryWetMixer → Reverb → Output
+        //                                                           ↑
+        //                                                     VoicePool (dry)
+        
+        // Delay processes the voice pool output - now 100% wet (dryWetMix = 0)
         fxDelay = StereoDelay(
                                 voicePool.voiceMixer,
                                 time: AUValue(masterParams.delay.timeInSeconds(tempo: masterParams.tempo)),
                                 feedback: AUValue(masterParams.delay.feedback),
-                                dryWetMix: AUValue(1-masterParams.delay.dryWetMix),
-                                pingPong: masterParams.delay.pingPong,
+                                dryWetMix: 0.0,  // 100% wet - dry/wet now handled by external mixer
+                                pingPong: true,  // Always enabled
                                 maximumDelayTime: 2
                                 )
         
-        // Reverb processes the delayed signal - initialized with parameters
-        fxReverb = CostelloReverb(
+        // Butterworth lowpass filter after delay (tames digital artifacts)
+        delayLowpass = LowPassButterworthFilter(
                                 fxDelay,
+                                cutoffFrequency: AUValue(masterParams.delay.toneCutoff),
+                                //resonance: 0.0  // Butterworth filter does not have resonance
+                                )
+        
+        // DryWetMixer blends dry signal (voice pool) with wet signal (delay → filter)
+        delayDryWetMixer = DryWetMixer(
+                                voicePool.voiceMixer,  // Input (dry)
+                                delayLowpass,           // Effect (wet)
+                                balance: AUValue(masterParams.delay.dryWetMix)
+                                )
+        
+        // Reverb processes the mixed signal (dry + filtered delay)
+        fxReverb = CostelloReverb(
+                                delayDryWetMixer,
                                 balance: AUValue(masterParams.reverb.balance),
                                 feedback: AUValue(masterParams.reverb.feedback),
                                 cutoffFrequency: AUValue(masterParams.reverb.cutoffFrequency)
