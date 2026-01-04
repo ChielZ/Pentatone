@@ -440,6 +440,13 @@ final class PolyphonicVoice {
         oscLeft.$modulatingMultiplier.ramp(to: AUValue(modulationState.baseModulatorMultiplier), duration: 0.05)
         oscRight.$modulatingMultiplier.ramp(to: AUValue(modulationState.baseModulatorMultiplier), duration: 0.05)
     }
+    
+    /// Resets modulation index to base (unmodulated) value
+    /// Called when voice LFO modulation amount is set to zero
+    func resetModulationIndexToBase() {
+        oscLeft.$modulationIndex.ramp(to: AUValue(modulationState.baseModulationIndex), duration: 0.05)
+        oscRight.$modulationIndex.ramp(to: AUValue(modulationState.baseModulationIndex), duration: 0.05)
+    }
     func updateFilterParameters(_ parameters: FilterParameters) {
         // Use zero-duration ramps to avoid AudioKit parameter ramping artifacts
         filter.$cutoffFrequency.ramp(to: AUValue(parameters.clampedCutoff), duration: 0)

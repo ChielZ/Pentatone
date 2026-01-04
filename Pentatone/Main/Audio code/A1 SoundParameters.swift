@@ -826,7 +826,13 @@ final class AudioParameterManager: ObservableObject {
     
     /// Update voice LFO amount to modulator level
     func updateVoiceLFOAmountToModulatorLevel(_ value: Double) {
+        let wasZero = voiceTemplate.modulation.voiceLFO.amountToModulatorLevel == 0.0
         voiceTemplate.modulation.voiceLFO.amountToModulatorLevel = value
+        
+        // If amount changed from non-zero to zero, reset parameter to base value
+        if !wasZero && value == 0.0 {
+            voicePool?.resetModulationIndexToBase()
+        }
     }
     
     /// Update voice LFO destination (deprecated - destinations are now fixed)
